@@ -1,0 +1,62 @@
+# ---- Java / build ----
+target/
+build/
+!**/src/main/**/target/
+!**/src/test/**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# ---- Maven ----
+.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+
+# ---- Gradle ----
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+
+# ---- Spring Boot ----
+*.log
+application-local.properties
+application-local.yml
+
+# ---- IDEs ----
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+nbproject/private/
+nbactions.xml
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Node / frontend ----
+node_modules/
+dist/
+.env
+.env.local
+npm-debug.log*
+yarn-error.log*
+
+# ---- Playwright / scratch ----
+.playwright-mcp/
+
+# ---- Docker ----
+*.pid
+
+# ---- Exercise statement (do not publish the company's document) ----
+*.pdf
+

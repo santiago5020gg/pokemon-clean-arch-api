@@ -1,0 +1,361 @@
+<title>PokeAPI — Integration Docs</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --panel:#ffffff; --ink:#1a1d21; --muted:#5b6470;
+    --border:#e3e6ea; --accent:#d64545; --accent2:#2b6cb0;
+    --code-bg:#f0f2f5; --chip:#eef1f5; --get:#2f855a; --put:#b7791f;
+    --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.04);
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  :root:not([data-theme="light"]){
+    @media (prefers-color-scheme:dark){
+      --bg:#0f1216; --panel:#171b21; --ink:#e6e9ee; --muted:#9aa4b1;
+      --border:#252b34; --accent:#f06a6a; --accent2:#63b3ed;
+      --code-bg:#0c0f13; --chip:#1e242c; --get:#68d391; --put:#f6ad55;
+      --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1216; --panel:#171b21; --ink:#e6e9ee; --muted:#9aa4b1;
+    --border:#252b34; --accent:#f06a6a; --accent2:#63b3ed;
+    --code-bg:#0c0f13; --chip:#1e242c; --get:#68d391; --put:#f6ad55;
+    --shadow:0 1px 3px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);
+    line-height:1.6;margin:0;padding:0}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px}
+  header.hero{border-bottom:1px solid var(--border);padding-bottom:24px;margin-bottom:8px}
+  .kicker{color:var(--accent);font-weight:700;font-size:.8rem;letter-spacing:.08em;
+    text-transform:uppercase;margin:0 0 6px}
+  h1{font-size:2rem;margin:0 0 8px;line-height:1.15}
+  .sub{color:var(--muted);margin:0}
+  .base{display:inline-block;margin-top:14px;font-family:var(--mono);font-size:.9rem;
+    background:var(--code-bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px}
+  h2.story-title{font-size:1.5rem;margin:52px 0 4px;padding:16px 0 10px;
+    border-bottom:2px solid var(--accent)}
+  h2.story-title .n{color:var(--accent)}
+  .story-goal{color:var(--muted);font-size:.95rem;margin:4px 0 8px}
+  h3{font-size:1.1rem;margin:28px 0 8px}
+  h4{font-size:.95rem;margin:18px 0 6px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  p{margin:8px 0}
+  a{color:var(--accent2)}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;
+    padding:22px 24px;margin:16px 0;box-shadow:var(--shadow)}
+  .stepnum{display:inline-flex;align-items:center;justify-content:center;
+    width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;
+    font-weight:700;font-size:.85rem;margin-right:8px;flex:0 0 auto}
+  .ep{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-family:var(--mono);
+    font-size:.95rem;margin:2px 0 10px}
+  .verb{background:var(--get);color:#fff;font-weight:700;font-size:.72rem;
+    padding:3px 9px;border-radius:6px;letter-spacing:.05em}
+  .verb.put{background:var(--put)}
+  .path{font-weight:600}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:10px;
+    padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:.82rem;
+    line-height:1.5;margin:12px 0}
+  code{font-family:var(--mono);background:var(--code-bg);border:1px solid var(--border);
+    border-radius:5px;padding:1px 6px;font-size:.85em}
+  pre code{background:none;border:none;padding:0}
+  .tablewrap{overflow-x:auto;margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;min-width:420px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+  td code{white-space:nowrap}
+  .note{border-left:3px solid var(--accent);background:var(--chip);border-radius:0 10px 10px 0;
+    padding:12px 16px;margin:14px 0;font-size:.9rem}
+  .note.warn{border-left-color:#d69e2e}
+  .flow{font-family:var(--mono);font-size:.82rem;background:var(--code-bg);
+    border:1px solid var(--border);border-radius:10px;padding:16px;white-space:pre;overflow-x:auto}
+  mark{background:rgba(214,69,69,.20);color:inherit;padding:0 3px;border-radius:3px;font-weight:600}
+  .ref{border-left:3px solid var(--accent2);background:var(--chip);border-radius:0 10px 10px 0;
+    padding:12px 16px;margin:12px 0;font-size:.9rem}
+  .ref .q{font-style:italic;color:var(--ink)}
+  .ref .src{display:block;margin-top:8px;color:var(--muted);font-size:.78rem;
+    text-transform:uppercase;letter-spacing:.04em;font-weight:600}
+  .tryit{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0 4px;font-size:.85rem}
+  .tryit .lbl{color:var(--muted);font-weight:600}
+  .tryit a{font-family:var(--mono);background:var(--code-bg);border:1px solid var(--border);
+    border-radius:8px;padding:7px 12px;text-decoration:none;color:var(--accent2);word-break:break-all}
+  .tryit a:hover{border-color:var(--accent2);text-decoration:underline}
+  footer{color:var(--muted);font-size:.82rem;margin-top:48px;padding-top:20px;border-top:1px solid var(--border)}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .toc a{background:var(--panel);border:1px solid var(--border);border-radius:8px;
+    padding:6px 12px;text-decoration:none;color:var(--ink);font-size:.85rem}
+  .toc a:hover{border-color:var(--accent2)}
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <p class="kicker">Java Technical Exercise · Ballast Lane</p>
+    <h1>PokeAPI — Integration Docs</h1>
+    <p class="sub">External endpoints consumed by the Spring Boot API, organized by User Story.</p>
+    <span class="base">Base URL &nbsp;·&nbsp; https://pokeapi.co/api/v2</span>
+    <div class="toc">
+      <a href="#us01">Story 01 — Enumeration</a>
+      <a href="#us02">Story 02 — Detailed View</a>
+      <a href="#us03">Story 03 — Synchronization</a>
+      <a href="#us04">Story 04 — Local Modification</a>
+    </div>
+  </header>
+
+  <!-- ============ USER STORY 01 ============ -->
+  <h2 class="story-title" id="us01"><span class="n">User Story 01</span> — Pokemon Enumeration</h2>
+  <p class="story-goal">Browse Pokémon through paginated results, showing each entry's sprite, category, mass and skills. <em>(Nice-to-have: caching.)</em></p>
+  <p class="story-goal"><strong>Needs 3 endpoints:</strong></p>
+
+  <div class="card">
+    <div class="ep"><span class="stepnum">1</span><span class="verb">GET</span><span class="path">/pokemon?limit=&offset=</span></div>
+    <h4>Paginated list</h4>
+    <div class="tryit"><span class="lbl">🔗 Try it:</span><a href="https://pokeapi.co/api/v2/pokemon?limit=20&amp;offset=0" target="_blank" rel="noopener">https://pokeapi.co/api/v2/pokemon?limit=20&amp;offset=0</a></div>
+    <div class="ref">
+      <span class="q">"The system should allow users to browse Pokemon via <mark>paginated results</mark>..."</span>
+      <span class="src">From the statement · US01 · "paginated results" is what requires this endpoint</span>
+    </div>
+    <p>Returns the paginated list of Pokémon. <strong>Only carries <code>name</code> and <code>url</code></strong> for each.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Query param</th><th>Description</th><th>Default</th></tr></thead>
+        <tbody>
+          <tr><td><code>limit</code></td><td>Results per page</td><td>20</td></tr>
+          <tr><td><code>offset</code></td><td>Starting index (pagination)</td><td>0</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Response 200</h4>
+<pre><code>{
+  "count": 1351,
+  "next": "https://pokeapi.co/api/v2/pokemon?offset=5&limit=5",
+  "previous": null,
+  "results": [
+    { "name": "bulbasaur", "url": ".../pokemon/1/" },
+    { "name": "ivysaur",   "url": ".../pokemon/2/" }
+  ]
+}</code></pre>
+    <div class="note warn">
+      <strong>N+1 problem:</strong> this endpoint carries no sprite, abilities or category.
+      Each result forces a call to <code>/pokemon/{id}</code> and <code>/pokemon-species/{id}</code>.
+      One page of 20 = dozens of calls → justifies the <strong>caching layer</strong>.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ep"><span class="stepnum">2</span><span class="verb">GET</span><span class="path">/pokemon/{id&nbsp;or&nbsp;name}</span></div>
+    <h4>Pokémon detail — sprite, mass and skills</h4>
+    <div class="tryit"><span class="lbl">🔗 Try it (bulbasaur):</span><a href="https://pokeapi.co/api/v2/pokemon/1" target="_blank" rel="noopener">https://pokeapi.co/api/v2/pokemon/1</a></div>
+    <div class="ref">
+      <span class="q">"...displaying each entry's <mark>sprite</mark>, category, <mark>mass</mark>, and a collection of their <mark>skills</mark>."</span>
+      <span class="src">From the statement · US01 · sprite → <code>sprites</code>, mass → <code>weight</code>, skills → <code>abilities</code></span>
+    </div>
+    <h4>Response 200 (fields relevant to US01)</h4>
+<pre><code>{
+  "id": 1, "name": "bulbasaur",
+  "weight": 69,
+  "abilities": [ { "ability": { "name": "overgrow" }, "is_hidden": false } ],
+  "sprites": { "front_default": ".../sprites/pokemon/1.png" },
+  "species": { "url": ".../pokemon-species/1/" }
+}</code></pre>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Statement asks</th><th>Source (JSON)</th></tr></thead>
+        <tbody>
+          <tr><td>sprite</td><td><code>sprites.front_default</code></td></tr>
+          <tr><td>mass</td><td><code>weight</code> (hectograms ÷10 = kg)</td></tr>
+          <tr><td>skills</td><td><code>abilities[].ability.name</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note"><strong>Category is missing:</strong> the <code>category</code> field does not exist here. That's why step 3 is needed. <code>species.url</code> chains straight to it.</div>
+  </div>
+
+  <div class="card">
+    <div class="ep"><span class="stepnum">3</span><span class="verb">GET</span><span class="path">/pokemon-species/{id&nbsp;or&nbsp;name}</span></div>
+    <h4>Species — the category</h4>
+    <div class="tryit"><span class="lbl">🔗 Try it (bulbasaur):</span><a href="https://pokeapi.co/api/v2/pokemon-species/1" target="_blank" rel="noopener">https://pokeapi.co/api/v2/pokemon-species/1</a></div>
+    <div class="ref">
+      <span class="q">"...displaying each entry's sprite, <mark>category</mark>, mass..."</span>
+      <span class="src">From the statement · US01 · category → <code>genera</code> field</span>
+    </div>
+    <p>The category lives in <code>genera</code>, a <strong>list with the category in several languages</strong>. Walk it and filter by language.</p>
+    <h4>Response 200 (field relevant to US01)</h4>
+<pre><code>{
+  "genera": [
+    { "genus": "Seed Pokémon",    "language": { "name": "en" } },
+    { "genus": "Pokémon Semilla", "language": { "name": "es" } }
+  ]
+}</code></pre>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Statement asks</th><th>Source (JSON)</th></tr></thead>
+        <tbody>
+          <tr><td>category</td><td><code>genera[]</code> where <code>language.name == "en"</code> → <code>.genus</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">Verified live with bulbasaur: in English it's <code>"Seed Pokémon"</code>; the PokeAPI even carries <code>"Pokémon Semilla"</code> in Spanish.</div>
+  </div>
+
+  <!-- ============ USER STORY 02 ============ -->
+  <h2 class="story-title" id="us02"><span class="n">User Story 02</span> — Detailed View</h2>
+  <p class="story-goal">See full data for a Pokémon: image, core statistics, narrative description and its evolutionary lineage.</p>
+  <p class="story-goal"><strong>Needs 3 endpoints:</strong></p>
+
+  <div class="card">
+    <div class="ep"><span class="stepnum">1</span><span class="verb">GET</span><span class="path">/pokemon/{id&nbsp;or&nbsp;name}</span></div>
+    <h4>Pokémon detail — image and statistics</h4>
+    <div class="tryit"><span class="lbl">🔗 Try it (bulbasaur):</span><a href="https://pokeapi.co/api/v2/pokemon/1" target="_blank" rel="noopener">https://pokeapi.co/api/v2/pokemon/1</a></div>
+    <div class="ref">
+      <span class="q">"...viewing its <mark>image</mark>, <mark>core statistics</mark>, narrative description, and evolutionary lineage."</span>
+      <span class="src">From the statement · US02 · image → <code>sprites.other.official-artwork</code>, core statistics → <code>stats</code></span>
+    </div>
+    <h4>Response 200 (fields relevant to US02)</h4>
+<pre><code>{
+  "stats": [
+    { "base_stat": 45, "stat": { "name": "hp" } },
+    { "base_stat": 49, "stat": { "name": "attack" } },
+    { "base_stat": 49, "stat": { "name": "defense" } }
+  ],
+  "sprites": {
+    "other": { "official-artwork": { "front_default": ".../official-artwork/1.png" } }
+  }
+}</code></pre>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Statement asks</th><th>Source (JSON)</th></tr></thead>
+        <tbody>
+          <tr><td>image</td><td><code>sprites.other.official-artwork.front_default</code></td></tr>
+          <tr><td>core statistics</td><td><code>stats[].base_stat</code> + <code>stats[].stat.name</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">For US02 use the <strong>high-quality image</strong> (official-artwork), not the small US01 sprite.</div>
+  </div>
+
+  <div class="card">
+    <div class="ep"><span class="stepnum">2</span><span class="verb">GET</span><span class="path">/pokemon-species/{id&nbsp;or&nbsp;name}</span></div>
+    <h4>Species — the narrative description</h4>
+    <div class="tryit"><span class="lbl">🔗 Try it (bulbasaur):</span><a href="https://pokeapi.co/api/v2/pokemon-species/1" target="_blank" rel="noopener">https://pokeapi.co/api/v2/pokemon-species/1</a></div>
+    <div class="ref">
+      <span class="q">"...viewing its image, core statistics, <mark>narrative description</mark>, and evolutionary lineage."</span>
+      <span class="src">From the statement · US02 · narrative description → <code>flavor_text_entries</code></span>
+    </div>
+    <h4>Response 200 (fields relevant to US02)</h4>
+<pre><code>{
+  "flavor_text_entries": [
+    { "flavor_text": "A strange seed was\nplanted on its\nback at birth.",
+      "language": { "name": "en" } }
+  ],
+  "evolution_chain": { "url": ".../evolution-chain/1/" }
+}</code></pre>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Statement asks</th><th>Source (JSON)</th></tr></thead>
+        <tbody>
+          <tr><td>narrative description</td><td><code>flavor_text_entries[]</code> where <code>language.name == "en"</code></td></tr>
+          <tr><td>(evolution link)</td><td><code>evolution_chain.url</code> → chains to step 3</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note warn"><strong>Dirty description:</strong> <code>flavor_text</code> contains line breaks (<code>\n</code>) and form-feeds (<code>\f</code>). Normalize: <code>text.replaceAll("[\\n\\f]", " ").trim()</code>.</div>
+  </div>
+
+  <div class="card">
+    <div class="ep"><span class="stepnum">3</span><span class="verb">GET</span><span class="path">/evolution-chain/{id}</span></div>
+    <h4>Evolution chain — the evolutionary lineage</h4>
+    <div class="tryit"><span class="lbl">🔗 Try it (bulbasaur's chain):</span><a href="https://pokeapi.co/api/v2/evolution-chain/1" target="_blank" rel="noopener">https://pokeapi.co/api/v2/evolution-chain/1</a></div>
+    <div class="ref">
+      <span class="q">"...viewing its image, core statistics, narrative description, and <mark>evolutionary lineage</mark>."</span>
+      <span class="src">From the statement · US02 · evolutionary lineage → <code>evolution-chain</code> (recursive structure)</span>
+    </div>
+    <h4>Response 200 (recursive structure)</h4>
+<pre><code>{
+  "chain": {
+    "species": { "name": "bulbasaur" },
+    "evolves_to": [
+      { "species": { "name": "ivysaur" },
+        "evolves_to": [
+          { "species": { "name": "venusaur" }, "evolves_to": [] }
+        ] }
+    ]
+  }
+}</code></pre>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Statement asks</th><th>Source (JSON)</th></tr></thead>
+        <tbody>
+          <tr><td>evolutionary lineage</td><td>walk <code>chain.evolves_to[]</code> recursively</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">Flattened: <code>bulbasaur → ivysaur → venusaur</code>. The <code>id</code> comes from <code>species.url</code>.</div>
+  </div>
+
+  <!-- ============ USER STORY 03 ============ -->
+  <h2 class="story-title" id="us03"><span class="n">User Story 03</span> — Data Synchronization</h2>
+  <p class="story-goal">Persist Pokémon into a local relational store to enable proprietary fields.</p>
+
+  <div class="card">
+    <div class="ref">
+      <span class="q">"Develop a mechanism to <mark>persist Pokemon data into a local relational store</mark>. This replication layer is intended to facilitate the <mark>addition of proprietary fields</mark>... localized nomenclature, geographical metadata, or internal classification tags."</span>
+      <span class="src">From the statement · US03</span>
+    </div>
+    <p><strong>No new external endpoint.</strong> It reuses the US01/US02 endpoints (list + detail + species + evolution) and <strong>stores the result in the local database</strong>, adding proprietary fields.</p>
+    <h4>Suggested own endpoint (our API, not PokeAPI)</h4>
+    <div class="ep"><span class="verb">POST</span><span class="path">/api/pokemon/sync</span></div>
+    <h4>Proprietary fields to add (from the statement)</h4>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Proprietary field</th><th>Statement</th></tr></thead>
+        <tbody>
+          <tr><td><code>localized_name</code></td><td>localized nomenclature</td></tr>
+          <tr><td><code>region</code> / geo metadata</td><td>geographical metadata</td></tr>
+          <tr><td><code>internal_tags</code></td><td>internal classification tags</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ USER STORY 04 ============ -->
+  <h2 class="story-title" id="us04"><span class="n">User Story 04</span> — Local Data Modification</h2>
+  <p class="story-goal">Update any Pokémon stored in the local database, with robust validation.</p>
+
+  <div class="card">
+    <div class="ref">
+      <span class="q">"Enable <mark>update operations</mark> for any Pokemon currently stored within the local database. Ensure robust validation: provide <mark>404</mark> responses for missing records, <mark>400</mark> status codes for malformed payloads..."</span>
+      <span class="src">From the statement · US04</span>
+    </div>
+    <p><strong>Does not touch the PokeAPI.</strong> It operates only on the local database.</p>
+    <h4>Suggested own endpoint (our API)</h4>
+    <div class="ep"><span class="verb put">PUT</span><span class="path">/api/pokemon/{id}</span></div>
+    <h4>Required validation</h4>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Situation</th><th>HTTP response</th></tr></thead>
+        <tbody>
+          <tr><td>Record not found</td><td><code>404 Not Found</code></td></tr>
+          <tr><td>Malformed / invalid payload</td><td><code>400 Bad Request</code></td></tr>
+          <tr><td>Additional defensive logic</td><td>as needed</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ FLOW ============ -->
+  <h3 style="margin-top:48px">Full synchronization flow (US01 → US03)</h3>
+  <div class="card">
+    <div class="flow">1. GET /pokemon?limit=N&offset=M        → list of {name, url}
+2. For each url:
+     GET /pokemon/{id}                   → sprite, weight, abilities, stats
+3. GET /pokemon-species/{id}            → category, description, evolution_chain.url
+4. GET /evolution-chain/{id}            → evolutionary lineage (recursive)
+5. Map to domain → persist to local DB (+ US03 proprietary fields)
+6. (nice to have) Cache each response</div>
+    <p style="margin-top:14px">Each full Pokémon ≈ <strong>3 calls</strong> (detail + species + evolution), plus 1 per page. This justifies the <strong>caching layer</strong>.</p>
+  </div>
+
+  <footer>
+    PokeAPI is public and read-only (GET) — no API key. It asks to cache locally (fair use).<br>
+    Endpoints verified on 2026-08-12 with the browser · Pokémon #1 (bulbasaur) · Mirror of <code>docs/api_doc.md</code>.
+  </footer>
+</div>
