@@ -98,6 +98,9 @@
       <a href="#us03">Story 03 — Synchronization</a>
       <a href="#us04">Story 04 — Local Modification</a>
       <a href="#crud">Our API — CRUD</a>
+      <a href="#auth">Auth API</a>
+      <a href="#db">Database</a>
+      <a href="#layers">Architecture layers</a>
     </div>
   </header>
 
@@ -427,6 +430,91 @@ Response 200      → updated resource
 <pre><code>No request body.
 Response 204 No Content
 404 Not Found     → id does not exist</code></pre>
+  </div>
+
+  <!-- ============ AUTH API ============ -->
+  <h2 class="story-title" id="auth"><span class="n">Auxiliary API</span> — Users &amp; Authentication</h2>
+  <p class="story-goal">Statement: <em>"Implement an auxiliary API for user registration, authentication, and the management of protected versus public routes."</em></p>
+
+  <div class="card">
+    <h4><span class="verb">POST</span> &nbsp;/api/auth/register &nbsp;— sign up</h4>
+<pre><code>Request
+{ "username": "ash", "email": "ash@pokedex.io", "password": "s3cret!" }
+
+Response 201
+{ "id": 1, "username": "ash", "email": "ash@pokedex.io", "role": "USER" }
+// the password is never returned
+400 Bad Request → invalid payload
+409 Conflict    → username / email already exists</code></pre>
+
+    <h4><span class="verb">POST</span> &nbsp;/api/auth/login &nbsp;— authenticate</h4>
+<pre><code>Request
+{ "username": "ash", "password": "s3cret!" }
+
+Response 200
+{ "token": "eyJhbGciOiJIUzI1NiJ9...", "type": "Bearer", "expiresIn": 3600 }
+401 Unauthorized → invalid credentials</code></pre>
+
+    <h4>Protected vs public routes</h4>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Route</th><th>Access</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /api/pokemon</code>, <code>GET /api/pokemon/{id}</code></td><td>Public</td></tr>
+          <tr><td><code>POST /api/auth/register</code>, <code>POST /api/auth/login</code></td><td>Public</td></tr>
+          <tr><td><code>POST /api/pokemon/sync</code>, <code>PUT /api/pokemon/{id}</code>, <code>DELETE /api/pokemon/{id}</code></td><td>Protected (Bearer token)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">Protected routes require the header <code>Authorization: Bearer &lt;token&gt;</code>. Missing/invalid token → <code>401 Unauthorized</code>; insufficient role → <code>403 Forbidden</code>. In Spring: Spring Security + JWT.</div>
+  </div>
+
+  <!-- ============ DATABASE ============ -->
+  <h2 class="story-title" id="db"><span class="n">Database</span> — entities</h2>
+  <p class="story-goal">Statement: <em>"a primary entity and a secondary collection for user management. Records must include a unique primary key and a minimum of two descriptive attributes."</em></p>
+
+  <div class="card">
+    <h4>Primary entity — <code>pokemon</code></h4>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Column</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>Primary key (unique)</td></tr>
+          <tr><td><code>name</code>, <code>category</code>, <code>weight</code>, <code>description</code>…</td><td>Descriptive attributes (≥2 ✔)</td></tr>
+          <tr><td><code>localizedName</code>, <code>region</code>, <code>internalTags</code></td><td>Proprietary attributes (US03)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Secondary collection — <code>users</code></h4>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Column</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>Primary key (unique)</td></tr>
+          <tr><td><code>username</code>, <code>email</code></td><td>Descriptive attributes (≥2 ✔)</td></tr>
+          <tr><td><code>passwordHash</code>, <code>role</code></td><td>Auth attributes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ LAYERS ============ -->
+  <h2 class="story-title" id="layers"><span class="n">Architecture layers</span> — no endpoints</h2>
+  <p class="story-goal">These technical requirements are architectural layers (hexagonal), not HTTP endpoints.</p>
+
+  <div class="card">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Requirement</th><th>Hexagonal layer</th><th>What it holds</th></tr></thead>
+        <tbody>
+          <tr><td>Data Layer</td><td><code>infrastructure/adapter/out</code></td><td>JPA repositories, PokeAPI client</td></tr>
+          <tr><td>Core Business Logic</td><td><code>core</code> (domain, usecase, ports)</td><td>Domain rules + validation, independent from API and data</td></tr>
+          <tr><td>API layer</td><td><code>infrastructure/adapter/in</code></td><td>REST controllers, exception handler</td></tr>
+          <tr><td>Testing &amp; Validation</td><td><code>test/</code> (mirror)</td><td>Unit tests on core (no Spring), integration on adapters</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">The core depends only on interfaces (ports) → <strong>dependency inversion</strong>. That independence is exactly what makes the core easy to unit-test.</div>
   </div>
 
   <!-- ============ FLOW ============ -->
