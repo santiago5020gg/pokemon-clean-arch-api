@@ -41,7 +41,7 @@ The exercise PDF is intentionally git-ignored (it is Ballast Lane's document).
 The mandatory package structure and dependency rules live in
 `prompts/pokedex-api-implementation-prompt.md`. The essentials:
 
-- Base package `com.jarcila.pokedex`.
+- Base package `com.pokedex`.
 - `core/` (domain, dto, mapper, ports, usecase) is the business core. It **must not
   depend on Spring, JPA, or `infrastructure`** — only on interfaces (ports).
   Dependencies always point inward (dependency inversion). This independence is
