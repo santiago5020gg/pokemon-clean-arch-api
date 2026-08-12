@@ -96,7 +96,9 @@ docker compose up         # run app + PostgreSQL (with seed data)
 | `feature/*` | One branch per change, cut from `dev`. |
 
 For **every** change: create `feature/<desc>` from `dev` → work with tests →
-merge into `dev` with `--no-ff` → merge `dev` into `main` only when verified.
+merge into `dev` with `--no-ff` → **delete the feature branch** (`git branch -d`) →
+merge `dev` into `main` only when verified. Deleting the feature branch right after
+it lands in `dev` is part of the workflow — keep the branch list clean.
 Never commit directly to `main`; never skip the feature branch.
 
 Commit messages follow **Conventional Commits** (`feat:`, `fix:`, `docs:`,
