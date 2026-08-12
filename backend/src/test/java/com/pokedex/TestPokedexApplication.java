@@ -1,4 +1,4 @@
-package com.jarcila.pokedex;
+package com.pokedex;
 
 import org.springframework.boot.SpringApplication;
 
