@@ -228,24 +228,78 @@ GET https://pokeapi.co/api/v2/evolution-chain/1
 
 ## User Story 03 — Data Synchronization
 
-Persist Pokémon into a local relational store to enable proprietary fields.
+Persist Pokémon into a local relational store so the data becomes *ours* —
+enabling proprietary fields and later modification (US04).
 
 > *"Develop a mechanism to **persist Pokemon data into a local relational store**.
 > This replication layer is intended to facilitate the **addition of proprietary
 > fields**... localized nomenclature, geographical metadata, or internal
 > classification tags."* — US03.
 
-**No new external endpoint.** It reuses the US01/US02 endpoints (list + detail +
-species + evolution) and stores the result in the local database, adding
-proprietary fields.
+**No new external endpoint is consumed.** It reuses the US01/US02 PokeAPI endpoints
+(list → detail → species → evolution) and **stores the result in our own database**,
+adding fields the PokeAPI does not have.
 
-**Suggested own endpoint (our API, not PokeAPI):** `POST /api/pokemon/sync`
+### What gets stored — (A) replicated from PokeAPI
 
-| Proprietary field | Statement |
-|-------------------|-----------|
-| `localized_name` | localized nomenclature |
-| `region` / geo metadata | geographical metadata |
-| `internal_tags` | internal classification tags |
+| Field | Source (PokeAPI) |
+|-------|------------------|
+| `id` (PK) | `pokemon.id` |
+| `name` | `pokemon.name` |
+| `spriteUrl` / `imageUrl` | `sprites.front_default` / official-artwork |
+| `weight`, `height` | `weight`, `height` |
+| `category` | `genera` (en) |
+| `description` | `flavor_text` (cleaned) |
+| `abilities`, `stats`, `evolutions` | detail + evolution-chain |
+
+### What gets stored — (B) proprietary fields
+
+Fields the PokeAPI will never provide. They prove the local DB is the system of
+record and are exactly what US04 edits. They also satisfy the DB requirement:
+*"a minimum of two descriptive attributes"*.
+
+| Proprietary field | Statement use case | Example |
+|-------------------|--------------------|---------|
+| `localizedName` | localized nomenclature | "Bulbasaur ES" |
+| `region` | geographical metadata | "Kanto" |
+| `internalTags` | internal classification tags | ["starter", "favorite"] |
+
+### Endpoint — trigger the replication
+
+```
+POST /api/pokemon/sync
+```
+
+**Why:** it fetches from the PokeAPI and writes/updates the records in our
+database. It is the only path that pulls PokeAPI data in; from here on the app
+reads and edits the local copy.
+
+Request body (optional — how much to replicate):
+```json
+{ "limit": 20, "offset": 0 }
+```
+
+Response `201 Created`:
+```json
+{
+  "synced": 20,
+  "created": 18,
+  "updated": 2,
+  "items": [
+    { "id": 1, "name": "bulbasaur", "category": "Seed Pokémon" }
+  ]
+}
+```
+
+**Full CRUD is required** over this local resource (statement: *"comprehensive CRUD
+operations"*):
+
+| Verb | Endpoint | Story |
+|------|----------|-------|
+| `POST` | `/api/pokemon/sync` | replicate — US03 |
+| `GET` | `/api/pokemon` | read — US01/US02 |
+| `PUT` | `/api/pokemon/{id}` | update — US04 |
+| `DELETE` | `/api/pokemon/{id}` | remove — CRUD |
 
 ---
 
