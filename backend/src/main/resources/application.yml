@@ -17,7 +17,18 @@ spring:
 
 # External PokeAPI (read-only, no key) — consumed by the out/pokeapi adapter
 pokeapi:
-  base-url: https://pokeapi.co/api/v2
+  base-url: ${POKEAPI_BASE_URL:https://pokeapi.co/api/v2}
+
+# Demo seed data (admin user + a few Pokemon) on an empty database
+pokedex:
+  seed:
+    enabled: ${POKEDEX_SEED_ENABLED:true}
+
+# JWT settings for the auth API
+security:
+  jwt:
+    secret: ${SECURITY_JWT_SECRET:change-me-change-me-change-me-change-me-1234}
+    expires-in-seconds: ${SECURITY_JWT_EXPIRES_IN:3600}
 
 management:
   endpoints:
