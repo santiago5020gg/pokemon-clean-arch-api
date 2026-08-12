@@ -394,6 +394,91 @@ Paginated list of stored Pokémon.
 
 ---
 
+## Auxiliary API — Users & Authentication
+
+Statement: *"Implement an auxiliary API for user registration, authentication, and
+the management of protected versus public routes."*
+
+### `POST /api/auth/register` — sign up
+
+```json
+// Request
+{ "username": "ash", "email": "ash@pokedex.io", "password": "s3cret!" }
+
+// Response 201 (password is never returned)
+{ "id": 1, "username": "ash", "email": "ash@pokedex.io", "role": "USER" }
+```
+
+- `400 Bad Request` → invalid payload
+- `409 Conflict` → username / email already exists
+
+### `POST /api/auth/login` — authenticate
+
+```json
+// Request
+{ "username": "ash", "password": "s3cret!" }
+
+// Response 200
+{ "token": "eyJhbGciOiJIUzI1NiJ9...", "type": "Bearer", "expiresIn": 3600 }
+```
+
+- `401 Unauthorized` → invalid credentials
+
+### Protected vs public routes
+
+| Route | Access |
+|-------|--------|
+| `GET /api/pokemon`, `GET /api/pokemon/{id}` | Public |
+| `POST /api/auth/register`, `POST /api/auth/login` | Public |
+| `POST /api/pokemon/sync`, `PUT /api/pokemon/{id}`, `DELETE /api/pokemon/{id}` | Protected (Bearer token) |
+
+Protected routes require the header `Authorization: Bearer <token>`. Missing/invalid
+token → `401 Unauthorized`; insufficient role → `403 Forbidden`. In Spring: Spring
+Security + JWT.
+
+---
+
+## Database — entities
+
+Statement: *"a primary entity and a secondary collection for user management.
+Records must include a unique primary key and a minimum of two descriptive
+attributes."*
+
+### Primary entity — `pokemon`
+
+| Column | Role |
+|--------|------|
+| `id` | Primary key (unique) |
+| `name`, `category`, `weight`, `description`… | Descriptive attributes (≥2 ✔) |
+| `localizedName`, `region`, `internalTags` | Proprietary attributes (US03) |
+
+### Secondary collection — `users`
+
+| Column | Role |
+|--------|------|
+| `id` | Primary key (unique) |
+| `username`, `email` | Descriptive attributes (≥2 ✔) |
+| `passwordHash`, `role` | Auth attributes |
+
+---
+
+## Architecture layers — no endpoints
+
+These technical requirements are architectural layers (hexagonal), **not HTTP
+endpoints**.
+
+| Requirement | Hexagonal layer | What it holds |
+|-------------|-----------------|---------------|
+| Data Layer | `infrastructure/adapter/out` | JPA repositories, PokeAPI client |
+| Core Business Logic | `core` (domain, usecase, ports) | Domain rules + validation, independent from API and data |
+| API layer | `infrastructure/adapter/in` | REST controllers, exception handler |
+| Testing & Validation | `test/` (mirror) | Unit tests on core (no Spring), integration on adapters |
+
+The core depends only on interfaces (ports) → **dependency inversion**. That
+independence is exactly what makes the core easy to unit-test.
+
+---
+
 ## Full synchronization flow (US01 → US03)
 
 ```
