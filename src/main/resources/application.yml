@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: pokedex
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/pokedex}
+    username: ${SPRING_DATASOURCE_USERNAME:pokedex}
+    password: ${SPRING_DATASOURCE_PASSWORD:pokedex}
+  jpa:
+    hibernate:
+      ddl-auto: validate        # Flyway owns the schema; Hibernate only validates
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+
+# External PokeAPI (read-only, no key) — consumed by the out/pokeapi adapter
+pokeapi:
+  base-url: https://pokeapi.co/api/v2
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
