@@ -97,6 +97,10 @@
       <a href="#us02">Story 02 — Detailed View</a>
       <a href="#us03">Story 03 — Synchronization</a>
       <a href="#us04">Story 04 — Local Modification</a>
+      <a href="#crud">Our API — CRUD</a>
+      <a href="#auth">Auth API</a>
+      <a href="#db">Database</a>
+      <a href="#layers">Architecture layers</a>
     </div>
   </header>
 
@@ -293,27 +297,64 @@
 
   <!-- ============ USER STORY 03 ============ -->
   <h2 class="story-title" id="us03"><span class="n">User Story 03</span> — Data Synchronization</h2>
-  <p class="story-goal">Persist Pokémon into a local relational store to enable proprietary fields.</p>
+  <p class="story-goal">Persist Pokémon into a local relational store so the data becomes <em>ours</em> — enabling proprietary fields and later modification (US04).</p>
 
   <div class="card">
     <div class="ref">
       <span class="q">"Develop a mechanism to <mark>persist Pokemon data into a local relational store</mark>. This replication layer is intended to facilitate the <mark>addition of proprietary fields</mark>... localized nomenclature, geographical metadata, or internal classification tags."</span>
       <span class="src">From the statement · US03</span>
     </div>
-    <p><strong>No new external endpoint.</strong> It reuses the US01/US02 endpoints (list + detail + species + evolution) and <strong>stores the result in the local database</strong>, adding proprietary fields.</p>
-    <h4>Suggested own endpoint (our API, not PokeAPI)</h4>
-    <div class="ep"><span class="verb">POST</span><span class="path">/api/pokemon/sync</span></div>
-    <h4>Proprietary fields to add (from the statement)</h4>
+    <p><strong>No new external endpoint is consumed.</strong> It reuses the US01/US02 PokeAPI endpoints (list → detail → species → evolution) and <strong>stores the result in our own database</strong>, adding fields the PokeAPI does not have.</p>
+
+    <h4>What gets stored — (A) replicated from PokeAPI</h4>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Proprietary field</th><th>Statement</th></tr></thead>
+        <thead><tr><th>Field</th><th>Statement wording</th><th>Source (PokeAPI)</th></tr></thead>
         <tbody>
-          <tr><td><code>localized_name</code></td><td>localized nomenclature</td></tr>
-          <tr><td><code>region</code> / geo metadata</td><td>geographical metadata</td></tr>
-          <tr><td><code>internal_tags</code></td><td>internal classification tags</td></tr>
+          <tr><td><code>id</code> (PK)</td><td>identity / unique key</td><td><code>pokemon.id</code></td></tr>
+          <tr><td><code>name</code></td><td>the Pokémon's name</td><td><code>pokemon.name</code></td></tr>
+          <tr><td><code>spriteUrl</code></td><td>US01 <mark>"sprite"</mark> (small image)</td><td><code>sprites.front_default</code></td></tr>
+          <tr><td><code>imageUrl</code></td><td>US02 <mark>"image"</mark> (large image)</td><td><code>sprites.other.official-artwork.front_default</code></td></tr>
+          <tr><td><code>weight</code></td><td>US01 <mark>"mass"</mark></td><td><code>weight</code></td></tr>
+          <tr><td><code>height</code></td><td><em>supporting (not explicit)</em></td><td><code>height</code></td></tr>
+          <tr><td><code>category</code></td><td>US01 <mark>"category"</mark></td><td><code>genera</code> (en)</td></tr>
+          <tr><td><code>description</code></td><td>US02 <mark>"narrative description"</mark></td><td><code>flavor_text</code> (cleaned)</td></tr>
+          <tr><td><code>abilities</code></td><td>US01 <mark>"skills"</mark></td><td><code>abilities[]</code></td></tr>
+          <tr><td><code>stats</code></td><td>US02 <mark>"core statistics"</mark></td><td><code>stats[]</code></td></tr>
+          <tr><td><code>evolutions</code></td><td>US02 <mark>"evolutionary lineage"</mark></td><td>evolution-chain</td></tr>
         </tbody>
       </table>
     </div>
+
+    <h4>What gets stored — (B) proprietary fields</h4>
+    <p>Fields the PokeAPI will never provide. They prove the local DB is the system of record and are exactly what US04 edits. They also satisfy the DB requirement: <em>"a minimum of two descriptive attributes"</em>.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Proprietary field</th><th>Statement use case</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><code>localizedName</code></td><td>localized nomenclature</td><td>"Bulbasaur ES"</td></tr>
+          <tr><td><code>region</code></td><td>geographical metadata</td><td>"Kanto"</td></tr>
+          <tr><td><code>internalTags</code></td><td>internal classification tags</td><td>["starter", "favorite"]</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>Endpoint — trigger the replication</h4>
+    <div class="ep"><span class="verb">POST</span><span class="path">/api/pokemon/sync</span></div>
+    <p><strong>Why:</strong> it fetches from the PokeAPI and writes/updates the records in our database. It is the only path that pulls PokeAPI data in; from here on the app reads and edits the local copy.</p>
+    <h4>Request body (optional — how much to replicate)</h4>
+<pre><code>{ "limit": 20, "offset": 0 }</code></pre>
+    <h4>Response 201</h4>
+<pre><code>{
+  "synced": 20,
+  "created": 18,
+  "updated": 2,
+  "items": [
+    { "id": 1, "name": "bulbasaur", "category": "Seed Pokémon" }
+  ]
+}</code></pre>
+
+    <div class="note"><strong>Full CRUD is required</strong> over this local resource (statement: "comprehensive CRUD operations"). See the <a href="#crud">CRUD endpoints</a> section below for each verb's payload and response.</div>
   </div>
 
   <!-- ============ USER STORY 04 ============ -->
@@ -339,6 +380,141 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- ============ CRUD ============ -->
+  <h2 class="story-title" id="crud"><span class="n">Our REST API</span> — CRUD endpoints (local resource)</h2>
+  <p class="story-goal">Endpoints <strong>we</strong> expose over the replicated <code>pokemon</code> resource. Statement: <em>"comprehensive CRUD operations... standard HTTP verbs, required parameters, and consistent return structures."</em></p>
+
+  <div class="card">
+    <h4><span class="verb">GET</span> &nbsp;/api/pokemon?page=&amp;size= &nbsp;— list (US01)</h4>
+    <p>Paginated list of stored Pokémon.</p>
+<pre><code>Response 200
+{
+  "content": [
+    { "id": 1, "name": "bulbasaur", "spriteUrl": ".../1.png",
+      "category": "Seed Pokémon", "weight": 69,
+      "abilities": ["overgrow", "chlorophyll"] }
+  ],
+  "page": 0, "size": 20, "totalElements": 1351, "totalPages": 68
+}</code></pre>
+
+    <h4><span class="verb">GET</span> &nbsp;/api/pokemon/{id} &nbsp;— detail (US02)</h4>
+<pre><code>Response 200
+{
+  "id": 1, "name": "bulbasaur",
+  "imageUrl": ".../official-artwork/1.png",
+  "stats": { "hp": 45, "attack": 49, "defense": 49 },
+  "description": "A strange seed was planted on its back at birth.",
+  "evolutions": ["bulbasaur", "ivysaur", "venusaur"],
+  "localizedName": "Bulbasaur ES", "region": "Kanto",
+  "internalTags": ["starter"]
+}</code></pre>
+
+    <h4><span class="verb">POST</span> &nbsp;/api/pokemon/sync &nbsp;— replicate (US03)</h4>
+<pre><code>Request                       Response 201
+{ "limit": 20, "offset": 0 }  { "synced": 20, "created": 18,
+                                "updated": 2, "items": [ ... ] }</code></pre>
+
+    <h4><span class="verb put">PUT</span> &nbsp;/api/pokemon/{id} &nbsp;— update (US04)</h4>
+<pre><code>Request
+{ "localizedName": "Bulbasaur ES",
+  "region": "Kanto",
+  "internalTags": ["starter", "favorite"] }
+
+Response 200      → updated resource
+404 Not Found     → id does not exist
+400 Bad Request   → invalid payload</code></pre>
+
+    <h4><span class="verb" style="background:#c53030">DELETE</span> &nbsp;/api/pokemon/{id} &nbsp;— remove</h4>
+<pre><code>No request body.
+Response 204 No Content
+404 Not Found     → id does not exist</code></pre>
+  </div>
+
+  <!-- ============ AUTH API ============ -->
+  <h2 class="story-title" id="auth"><span class="n">Auxiliary API</span> — Users &amp; Authentication</h2>
+  <p class="story-goal">Statement: <em>"Implement an auxiliary API for user registration, authentication, and the management of protected versus public routes."</em></p>
+
+  <div class="card">
+    <h4><span class="verb">POST</span> &nbsp;/api/auth/register &nbsp;— sign up</h4>
+<pre><code>Request
+{ "username": "ash", "email": "ash@pokedex.io", "password": "s3cret!" }
+
+Response 201
+{ "id": 1, "username": "ash", "email": "ash@pokedex.io", "role": "USER" }
+// the password is never returned
+400 Bad Request → invalid payload
+409 Conflict    → username / email already exists</code></pre>
+
+    <h4><span class="verb">POST</span> &nbsp;/api/auth/login &nbsp;— authenticate</h4>
+<pre><code>Request
+{ "username": "ash", "password": "s3cret!" }
+
+Response 200
+{ "token": "eyJhbGciOiJIUzI1NiJ9...", "type": "Bearer", "expiresIn": 3600 }
+401 Unauthorized → invalid credentials</code></pre>
+
+    <h4>Protected vs public routes</h4>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Route</th><th>Access</th></tr></thead>
+        <tbody>
+          <tr><td><code>GET /api/pokemon</code>, <code>GET /api/pokemon/{id}</code></td><td>Public</td></tr>
+          <tr><td><code>POST /api/auth/register</code>, <code>POST /api/auth/login</code></td><td>Public</td></tr>
+          <tr><td><code>POST /api/pokemon/sync</code>, <code>PUT /api/pokemon/{id}</code>, <code>DELETE /api/pokemon/{id}</code></td><td>Protected (Bearer token)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">Protected routes require the header <code>Authorization: Bearer &lt;token&gt;</code>. Missing/invalid token → <code>401 Unauthorized</code>; insufficient role → <code>403 Forbidden</code>. In Spring: Spring Security + JWT.</div>
+  </div>
+
+  <!-- ============ DATABASE ============ -->
+  <h2 class="story-title" id="db"><span class="n">Database</span> — entities</h2>
+  <p class="story-goal">Statement: <em>"a primary entity and a secondary collection for user management. Records must include a unique primary key and a minimum of two descriptive attributes."</em></p>
+
+  <div class="card">
+    <h4>Primary entity — <code>pokemon</code></h4>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Column</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>Primary key (unique)</td></tr>
+          <tr><td><code>name</code>, <code>category</code>, <code>weight</code>, <code>description</code>…</td><td>Descriptive attributes (≥2 ✔)</td></tr>
+          <tr><td><code>localizedName</code>, <code>region</code>, <code>internalTags</code></td><td>Proprietary attributes (US03)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Secondary collection — <code>users</code></h4>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Column</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>id</code></td><td>Primary key (unique)</td></tr>
+          <tr><td><code>username</code>, <code>email</code></td><td>Descriptive attributes (≥2 ✔)</td></tr>
+          <tr><td><code>passwordHash</code>, <code>role</code></td><td>Auth attributes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ============ LAYERS ============ -->
+  <h2 class="story-title" id="layers"><span class="n">Architecture layers</span> — no endpoints</h2>
+  <p class="story-goal">These technical requirements are architectural layers (hexagonal), not HTTP endpoints.</p>
+
+  <div class="card">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Requirement</th><th>Hexagonal layer</th><th>What it holds</th></tr></thead>
+        <tbody>
+          <tr><td>Data Layer</td><td><code>infrastructure/adapter/out</code></td><td>JPA repositories, PokeAPI client</td></tr>
+          <tr><td>Core Business Logic</td><td><code>core</code> (domain, usecase, ports)</td><td>Domain rules + validation, independent from API and data</td></tr>
+          <tr><td>API layer</td><td><code>infrastructure/adapter/in</code></td><td>REST controllers, exception handler</td></tr>
+          <tr><td>Testing &amp; Validation</td><td><code>test/</code> (mirror)</td><td>Unit tests on core (no Spring), integration on adapters</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">The core depends only on interfaces (ports) → <strong>dependency inversion</strong>. That independence is exactly what makes the core easy to unit-test.</div>
   </div>
 
   <!-- ============ FLOW ============ -->

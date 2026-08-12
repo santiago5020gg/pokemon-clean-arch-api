@@ -228,24 +228,82 @@ GET https://pokeapi.co/api/v2/evolution-chain/1
 
 ## User Story 03 — Data Synchronization
 
-Persist Pokémon into a local relational store to enable proprietary fields.
+Persist Pokémon into a local relational store so the data becomes *ours* —
+enabling proprietary fields and later modification (US04).
 
 > *"Develop a mechanism to **persist Pokemon data into a local relational store**.
 > This replication layer is intended to facilitate the **addition of proprietary
 > fields**... localized nomenclature, geographical metadata, or internal
 > classification tags."* — US03.
 
-**No new external endpoint.** It reuses the US01/US02 endpoints (list + detail +
-species + evolution) and stores the result in the local database, adding
-proprietary fields.
+**No new external endpoint is consumed.** It reuses the US01/US02 PokeAPI endpoints
+(list → detail → species → evolution) and **stores the result in our own database**,
+adding fields the PokeAPI does not have.
 
-**Suggested own endpoint (our API, not PokeAPI):** `POST /api/pokemon/sync`
+### What gets stored — (A) replicated from PokeAPI
 
-| Proprietary field | Statement |
-|-------------------|-----------|
-| `localized_name` | localized nomenclature |
-| `region` / geo metadata | geographical metadata |
-| `internal_tags` | internal classification tags |
+| Field | Statement wording | Source (PokeAPI) |
+|-------|-------------------|------------------|
+| `id` (PK) | identity / unique key | `pokemon.id` |
+| `name` | the Pokémon's name | `pokemon.name` |
+| `spriteUrl` | US01 **"sprite"** (small image) | `sprites.front_default` |
+| `imageUrl` | US02 **"image"** (large image) | `sprites.other.official-artwork.front_default` |
+| `weight` | US01 **"mass"** | `weight` |
+| `height` | *supporting (not explicit)* | `height` |
+| `category` | US01 **"category"** | `genera` (en) |
+| `description` | US02 **"narrative description"** | `flavor_text` (cleaned) |
+| `abilities` | US01 **"skills"** | `abilities[]` |
+| `stats` | US02 **"core statistics"** | `stats[]` |
+| `evolutions` | US02 **"evolutionary lineage"** | evolution-chain |
+
+### What gets stored — (B) proprietary fields
+
+Fields the PokeAPI will never provide. They prove the local DB is the system of
+record and are exactly what US04 edits. They also satisfy the DB requirement:
+*"a minimum of two descriptive attributes"*.
+
+| Proprietary field | Statement use case | Example |
+|-------------------|--------------------|---------|
+| `localizedName` | localized nomenclature | "Bulbasaur ES" |
+| `region` | geographical metadata | "Kanto" |
+| `internalTags` | internal classification tags | ["starter", "favorite"] |
+
+### Endpoint — trigger the replication
+
+```
+POST /api/pokemon/sync
+```
+
+**Why:** it fetches from the PokeAPI and writes/updates the records in our
+database. It is the only path that pulls PokeAPI data in; from here on the app
+reads and edits the local copy.
+
+Request body (optional — how much to replicate):
+```json
+{ "limit": 20, "offset": 0 }
+```
+
+Response `201 Created`:
+```json
+{
+  "synced": 20,
+  "created": 18,
+  "updated": 2,
+  "items": [
+    { "id": 1, "name": "bulbasaur", "category": "Seed Pokémon" }
+  ]
+}
+```
+
+**Full CRUD is required** over this local resource (statement: *"comprehensive CRUD
+operations"*):
+
+| Verb | Endpoint | Story |
+|------|----------|-------|
+| `POST` | `/api/pokemon/sync` | replicate — US03 |
+| `GET` | `/api/pokemon` | read — US01/US02 |
+| `PUT` | `/api/pokemon/{id}` | update — US04 |
+| `DELETE` | `/api/pokemon/{id}` | remove — CRUD |
 
 ---
 
@@ -266,6 +324,158 @@ Update any Pokémon stored in the local database, with robust validation.
 | Record not found | `404 Not Found` |
 | Malformed / invalid payload | `400 Bad Request` |
 | Additional defensive logic | as needed |
+
+---
+
+## Our REST API — CRUD endpoints (local resource)
+
+Endpoints **we** expose over the replicated `pokemon` resource. Statement:
+*"comprehensive CRUD operations... standard HTTP verbs, required parameters, and
+consistent return structures."*
+
+### `GET /api/pokemon?page=&size=` — list (US01)
+
+Paginated list of stored Pokémon.
+
+```json
+// Response 200
+{
+  "content": [
+    { "id": 1, "name": "bulbasaur", "spriteUrl": ".../1.png",
+      "category": "Seed Pokémon", "weight": 69,
+      "abilities": ["overgrow", "chlorophyll"] }
+  ],
+  "page": 0, "size": 20, "totalElements": 1351, "totalPages": 68
+}
+```
+
+### `GET /api/pokemon/{id}` — detail (US02)
+
+```json
+// Response 200
+{
+  "id": 1, "name": "bulbasaur",
+  "imageUrl": ".../official-artwork/1.png",
+  "stats": { "hp": 45, "attack": 49, "defense": 49 },
+  "description": "A strange seed was planted on its back at birth.",
+  "evolutions": ["bulbasaur", "ivysaur", "venusaur"],
+  "localizedName": "Bulbasaur ES", "region": "Kanto",
+  "internalTags": ["starter"]
+}
+```
+
+### `POST /api/pokemon/sync` — replicate (US03)
+
+```json
+// Request
+{ "limit": 20, "offset": 0 }
+
+// Response 201
+{ "synced": 20, "created": 18, "updated": 2, "items": [ /* ... */ ] }
+```
+
+### `PUT /api/pokemon/{id}` — update (US04)
+
+```json
+// Request
+{ "localizedName": "Bulbasaur ES", "region": "Kanto",
+  "internalTags": ["starter", "favorite"] }
+```
+
+- `200 OK` → updated resource
+- `404 Not Found` → id does not exist
+- `400 Bad Request` → invalid payload
+
+### `DELETE /api/pokemon/{id}` — remove
+
+- No request body.
+- `204 No Content` → deleted
+- `404 Not Found` → id does not exist
+
+---
+
+## Auxiliary API — Users & Authentication
+
+Statement: *"Implement an auxiliary API for user registration, authentication, and
+the management of protected versus public routes."*
+
+### `POST /api/auth/register` — sign up
+
+```json
+// Request
+{ "username": "ash", "email": "ash@pokedex.io", "password": "s3cret!" }
+
+// Response 201 (password is never returned)
+{ "id": 1, "username": "ash", "email": "ash@pokedex.io", "role": "USER" }
+```
+
+- `400 Bad Request` → invalid payload
+- `409 Conflict` → username / email already exists
+
+### `POST /api/auth/login` — authenticate
+
+```json
+// Request
+{ "username": "ash", "password": "s3cret!" }
+
+// Response 200
+{ "token": "eyJhbGciOiJIUzI1NiJ9...", "type": "Bearer", "expiresIn": 3600 }
+```
+
+- `401 Unauthorized` → invalid credentials
+
+### Protected vs public routes
+
+| Route | Access |
+|-------|--------|
+| `GET /api/pokemon`, `GET /api/pokemon/{id}` | Public |
+| `POST /api/auth/register`, `POST /api/auth/login` | Public |
+| `POST /api/pokemon/sync`, `PUT /api/pokemon/{id}`, `DELETE /api/pokemon/{id}` | Protected (Bearer token) |
+
+Protected routes require the header `Authorization: Bearer <token>`. Missing/invalid
+token → `401 Unauthorized`; insufficient role → `403 Forbidden`. In Spring: Spring
+Security + JWT.
+
+---
+
+## Database — entities
+
+Statement: *"a primary entity and a secondary collection for user management.
+Records must include a unique primary key and a minimum of two descriptive
+attributes."*
+
+### Primary entity — `pokemon`
+
+| Column | Role |
+|--------|------|
+| `id` | Primary key (unique) |
+| `name`, `category`, `weight`, `description`… | Descriptive attributes (≥2 ✔) |
+| `localizedName`, `region`, `internalTags` | Proprietary attributes (US03) |
+
+### Secondary collection — `users`
+
+| Column | Role |
+|--------|------|
+| `id` | Primary key (unique) |
+| `username`, `email` | Descriptive attributes (≥2 ✔) |
+| `passwordHash`, `role` | Auth attributes |
+
+---
+
+## Architecture layers — no endpoints
+
+These technical requirements are architectural layers (hexagonal), **not HTTP
+endpoints**.
+
+| Requirement | Hexagonal layer | What it holds |
+|-------------|-----------------|---------------|
+| Data Layer | `infrastructure/adapter/out` | JPA repositories, PokeAPI client |
+| Core Business Logic | `core` (domain, usecase, ports) | Domain rules + validation, independent from API and data |
+| API layer | `infrastructure/adapter/in` | REST controllers, exception handler |
+| Testing & Validation | `test/` (mirror) | Unit tests on core (no Spring), integration on adapters |
+
+The core depends only on interfaces (ports) → **dependency inversion**. That
+independence is exactly what makes the core easy to unit-test.
 
 ---
 
