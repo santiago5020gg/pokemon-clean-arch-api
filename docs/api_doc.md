@@ -242,15 +242,19 @@ adding fields the PokeAPI does not have.
 
 ### What gets stored — (A) replicated from PokeAPI
 
-| Field | Source (PokeAPI) |
-|-------|------------------|
-| `id` (PK) | `pokemon.id` |
-| `name` | `pokemon.name` |
-| `spriteUrl` / `imageUrl` | `sprites.front_default` / official-artwork |
-| `weight`, `height` | `weight`, `height` |
-| `category` | `genera` (en) |
-| `description` | `flavor_text` (cleaned) |
-| `abilities`, `stats`, `evolutions` | detail + evolution-chain |
+| Field | Statement wording | Source (PokeAPI) |
+|-------|-------------------|------------------|
+| `id` (PK) | identity / unique key | `pokemon.id` |
+| `name` | the Pokémon's name | `pokemon.name` |
+| `spriteUrl` | US01 **"sprite"** (small image) | `sprites.front_default` |
+| `imageUrl` | US02 **"image"** (large image) | `sprites.other.official-artwork.front_default` |
+| `weight` | US01 **"mass"** | `weight` |
+| `height` | *supporting (not explicit)* | `height` |
+| `category` | US01 **"category"** | `genera` (en) |
+| `description` | US02 **"narrative description"** | `flavor_text` (cleaned) |
+| `abilities` | US01 **"skills"** | `abilities[]` |
+| `stats` | US02 **"core statistics"** | `stats[]` |
+| `evolutions` | US02 **"evolutionary lineage"** | evolution-chain |
 
 ### What gets stored — (B) proprietary fields
 
@@ -320,6 +324,73 @@ Update any Pokémon stored in the local database, with robust validation.
 | Record not found | `404 Not Found` |
 | Malformed / invalid payload | `400 Bad Request` |
 | Additional defensive logic | as needed |
+
+---
+
+## Our REST API — CRUD endpoints (local resource)
+
+Endpoints **we** expose over the replicated `pokemon` resource. Statement:
+*"comprehensive CRUD operations... standard HTTP verbs, required parameters, and
+consistent return structures."*
+
+### `GET /api/pokemon?page=&size=` — list (US01)
+
+Paginated list of stored Pokémon.
+
+```json
+// Response 200
+{
+  "content": [
+    { "id": 1, "name": "bulbasaur", "spriteUrl": ".../1.png",
+      "category": "Seed Pokémon", "weight": 69,
+      "abilities": ["overgrow", "chlorophyll"] }
+  ],
+  "page": 0, "size": 20, "totalElements": 1351, "totalPages": 68
+}
+```
+
+### `GET /api/pokemon/{id}` — detail (US02)
+
+```json
+// Response 200
+{
+  "id": 1, "name": "bulbasaur",
+  "imageUrl": ".../official-artwork/1.png",
+  "stats": { "hp": 45, "attack": 49, "defense": 49 },
+  "description": "A strange seed was planted on its back at birth.",
+  "evolutions": ["bulbasaur", "ivysaur", "venusaur"],
+  "localizedName": "Bulbasaur ES", "region": "Kanto",
+  "internalTags": ["starter"]
+}
+```
+
+### `POST /api/pokemon/sync` — replicate (US03)
+
+```json
+// Request
+{ "limit": 20, "offset": 0 }
+
+// Response 201
+{ "synced": 20, "created": 18, "updated": 2, "items": [ /* ... */ ] }
+```
+
+### `PUT /api/pokemon/{id}` — update (US04)
+
+```json
+// Request
+{ "localizedName": "Bulbasaur ES", "region": "Kanto",
+  "internalTags": ["starter", "favorite"] }
+```
+
+- `200 OK` → updated resource
+- `404 Not Found` → id does not exist
+- `400 Bad Request` → invalid payload
+
+### `DELETE /api/pokemon/{id}` — remove
+
+- No request body.
+- `204 No Content` → deleted
+- `404 Not Found` → id does not exist
 
 ---
 

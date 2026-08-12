@@ -97,6 +97,7 @@
       <a href="#us02">Story 02 — Detailed View</a>
       <a href="#us03">Story 03 — Synchronization</a>
       <a href="#us04">Story 04 — Local Modification</a>
+      <a href="#crud">Our API — CRUD</a>
     </div>
   </header>
 
@@ -305,15 +306,19 @@
     <h4>What gets stored — (A) replicated from PokeAPI</h4>
     <div class="tablewrap">
       <table>
-        <thead><tr><th>Field</th><th>Source (PokeAPI)</th></tr></thead>
+        <thead><tr><th>Field</th><th>Statement wording</th><th>Source (PokeAPI)</th></tr></thead>
         <tbody>
-          <tr><td><code>id</code> (PK)</td><td><code>pokemon.id</code></td></tr>
-          <tr><td><code>name</code></td><td><code>pokemon.name</code></td></tr>
-          <tr><td><code>spriteUrl</code> / <code>imageUrl</code></td><td><code>sprites.front_default</code> / official-artwork</td></tr>
-          <tr><td><code>weight</code>, <code>height</code></td><td><code>weight</code>, <code>height</code></td></tr>
-          <tr><td><code>category</code></td><td><code>genera</code> (en)</td></tr>
-          <tr><td><code>description</code></td><td><code>flavor_text</code> (cleaned)</td></tr>
-          <tr><td><code>abilities</code>, <code>stats</code>, <code>evolutions</code></td><td>detail + evolution-chain</td></tr>
+          <tr><td><code>id</code> (PK)</td><td>identity / unique key</td><td><code>pokemon.id</code></td></tr>
+          <tr><td><code>name</code></td><td>the Pokémon's name</td><td><code>pokemon.name</code></td></tr>
+          <tr><td><code>spriteUrl</code></td><td>US01 <mark>"sprite"</mark> (small image)</td><td><code>sprites.front_default</code></td></tr>
+          <tr><td><code>imageUrl</code></td><td>US02 <mark>"image"</mark> (large image)</td><td><code>sprites.other.official-artwork.front_default</code></td></tr>
+          <tr><td><code>weight</code></td><td>US01 <mark>"mass"</mark></td><td><code>weight</code></td></tr>
+          <tr><td><code>height</code></td><td><em>supporting (not explicit)</em></td><td><code>height</code></td></tr>
+          <tr><td><code>category</code></td><td>US01 <mark>"category"</mark></td><td><code>genera</code> (en)</td></tr>
+          <tr><td><code>description</code></td><td>US02 <mark>"narrative description"</mark></td><td><code>flavor_text</code> (cleaned)</td></tr>
+          <tr><td><code>abilities</code></td><td>US01 <mark>"skills"</mark></td><td><code>abilities[]</code></td></tr>
+          <tr><td><code>stats</code></td><td>US02 <mark>"core statistics"</mark></td><td><code>stats[]</code></td></tr>
+          <tr><td><code>evolutions</code></td><td>US02 <mark>"evolutionary lineage"</mark></td><td>evolution-chain</td></tr>
         </tbody>
       </table>
     </div>
@@ -346,11 +351,7 @@
   ]
 }</code></pre>
 
-    <div class="note"><strong>Full CRUD is required</strong> over this local resource (statement: "comprehensive CRUD operations"):
-      <code>POST /api/pokemon/sync</code> (replicate — US03) ·
-      <code>GET /api/pokemon</code> (read — US01/US02) ·
-      <code>PUT /api/pokemon/{id}</code> (update — US04) ·
-      <code>DELETE /api/pokemon/{id}</code> (remove).</div>
+    <div class="note"><strong>Full CRUD is required</strong> over this local resource (statement: "comprehensive CRUD operations"). See the <a href="#crud">CRUD endpoints</a> section below for each verb's payload and response.</div>
   </div>
 
   <!-- ============ USER STORY 04 ============ -->
@@ -376,6 +377,56 @@
         </tbody>
       </table>
     </div>
+  </div>
+
+  <!-- ============ CRUD ============ -->
+  <h2 class="story-title" id="crud"><span class="n">Our REST API</span> — CRUD endpoints (local resource)</h2>
+  <p class="story-goal">Endpoints <strong>we</strong> expose over the replicated <code>pokemon</code> resource. Statement: <em>"comprehensive CRUD operations... standard HTTP verbs, required parameters, and consistent return structures."</em></p>
+
+  <div class="card">
+    <h4><span class="verb">GET</span> &nbsp;/api/pokemon?page=&amp;size= &nbsp;— list (US01)</h4>
+    <p>Paginated list of stored Pokémon.</p>
+<pre><code>Response 200
+{
+  "content": [
+    { "id": 1, "name": "bulbasaur", "spriteUrl": ".../1.png",
+      "category": "Seed Pokémon", "weight": 69,
+      "abilities": ["overgrow", "chlorophyll"] }
+  ],
+  "page": 0, "size": 20, "totalElements": 1351, "totalPages": 68
+}</code></pre>
+
+    <h4><span class="verb">GET</span> &nbsp;/api/pokemon/{id} &nbsp;— detail (US02)</h4>
+<pre><code>Response 200
+{
+  "id": 1, "name": "bulbasaur",
+  "imageUrl": ".../official-artwork/1.png",
+  "stats": { "hp": 45, "attack": 49, "defense": 49 },
+  "description": "A strange seed was planted on its back at birth.",
+  "evolutions": ["bulbasaur", "ivysaur", "venusaur"],
+  "localizedName": "Bulbasaur ES", "region": "Kanto",
+  "internalTags": ["starter"]
+}</code></pre>
+
+    <h4><span class="verb">POST</span> &nbsp;/api/pokemon/sync &nbsp;— replicate (US03)</h4>
+<pre><code>Request                       Response 201
+{ "limit": 20, "offset": 0 }  { "synced": 20, "created": 18,
+                                "updated": 2, "items": [ ... ] }</code></pre>
+
+    <h4><span class="verb put">PUT</span> &nbsp;/api/pokemon/{id} &nbsp;— update (US04)</h4>
+<pre><code>Request
+{ "localizedName": "Bulbasaur ES",
+  "region": "Kanto",
+  "internalTags": ["starter", "favorite"] }
+
+Response 200      → updated resource
+404 Not Found     → id does not exist
+400 Bad Request   → invalid payload</code></pre>
+
+    <h4><span class="verb" style="background:#c53030">DELETE</span> &nbsp;/api/pokemon/{id} &nbsp;— remove</h4>
+<pre><code>No request body.
+Response 204 No Content
+404 Not Found     → id does not exist</code></pre>
   </div>
 
   <!-- ============ FLOW ============ -->
