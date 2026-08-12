@@ -26,7 +26,7 @@
 
 src/
 ├── main/
-│   ├── java/com/jarcila/pokedex/
+│   ├── java/com/pokedex/
 │   │   ├── application/                 # Entry point / configuration (main, Spring Boot config, beans, security)
 │   │   ├── core/                        # Business core (independent from frameworks and infrastructure)
 │   │   │   ├── domain/                  # Domain entities and models (POJOs, no framework annotations)
