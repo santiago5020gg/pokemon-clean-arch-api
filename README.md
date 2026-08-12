@@ -39,5 +39,6 @@ Java 21 · Spring Boot 3 · Maven · Spring Data JPA · PostgreSQL · Bean Valid
 JUnit 5 + Mockito + AssertJ · Testcontainers · Spring Cache (Caffeine/Redis) ·
 Docker + docker-compose · React/Vue frontend.
 
-Base package: `com.jarcila.pokedex`. Architecture and dependency rules are defined
-in [`prompts/best_practices.md`](prompts/best_practices.md).
+Base package: `com.jarcila.pokedex`. Architecture, dependency rules and the full
+API contract are defined in
+[`prompts/pokedex-api-implementation-prompt.md`](prompts/pokedex-api-implementation-prompt.md).

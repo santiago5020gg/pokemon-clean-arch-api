@@ -12,8 +12,9 @@ Each file documents one step of the work:
 
 ## Index
 
-- [`best_practices.md`](best_practices.md)
+- [`pokedex-api-implementation-prompt.md`](pokedex-api-implementation-prompt.md)
   — Master prompt: senior engineer role, mandatory hexagonal architecture, TDD
-  (Red-Green-Refactor), SOLID, target stack and delivery criteria.
+  (Red-Green-Refactor), SOLID, the full API contract (PokeAPI + our REST API +
+  auth), the data model, error handling and the definition of done.
 - [`01-analyze-requirements-and-document-pokeapi.md`](01-analyze-requirements-and-document-pokeapi.md)
   — Analyze the exercise PDF and document the PokeAPI endpoints per user story.
