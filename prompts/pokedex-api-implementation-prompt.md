@@ -9,11 +9,15 @@
 
 
 <Scope>
-    This prompt covers the BACKEND implementation ONLY (the Java + Spring Boot service).
-    Out of scope here — handled as separate deliverables:
+    This prompt covers the BACKEND implementation (the Java + Spring Boot service) AND its
+    containerization (a Dockerfile for the app + a docker-compose.yml with PostgreSQL).
+    See <Containerization> and <Database_Schema>.
+    Out of scope — a separate deliverable:
       - The frontend (React/Vue) that consumes the API.
-      - Containerization (Dockerfile / docker-compose) and any deployment/infra concern.
-    Stay focused on domain, application and infrastructure code plus their tests.
+    Stay focused on domain, application and infrastructure code, their tests, and the container setup.
+
+    The complete, browser-verified API contract (all endpoints, fields and examples) lives in
+    `docs/api_doc.md` — treat it as the source of truth and keep this prompt consistent with it.
 </Scope>
 
 
@@ -132,15 +136,52 @@ src/
 </REST_API_Contract>
 
 
-<Data_Model>
-    Relational DB with a primary entity and a secondary collection; each with a unique PK and
-    at least two descriptive attributes.
-      - `pokemon` (primary): id (PK); replicated attributes (name, spriteUrl, imageUrl, weight,
-        category, description, abilities, stats, evolutions); proprietary attributes
-        (localizedName, region, internalTags) — the fields the PokeAPI does not have and that US04 edits.
-      - `users` (secondary): id (PK); username, email (descriptive); passwordHash, role (auth).
-    Persistence lives only in the `out/persistence` adapter as JPA entities; the core uses domain models.
-</Data_Model>
+<Database_Schema>
+    Relational schema (PostgreSQL). Primary entity `pokemon` + secondary collection `users`, each with
+    a unique PK and at least two descriptive attributes. The 6 fixed Pokémon stats are columns; the
+    variable-length collections (abilities, evolutions) are child tables. Persistence lives ONLY in the
+    out/persistence adapter as JPA entities; the core uses domain models (never JPA entities).
+
+    pokemon                                  -- primary entity
+      id              BIGINT       PK        -- the PokeAPI id
+      name            VARCHAR(80)  UNIQUE, NOT NULL
+      sprite_url      VARCHAR(255)           -- US01 "sprite" (small image)
+      image_url       VARCHAR(255)           -- US02 "image" (official-artwork)
+      weight          INT                    -- US01 "mass" (hectograms; ÷10 = kg)
+      height          INT
+      category        VARCHAR(80)            -- US01 "category" (from genera)
+      description     TEXT                   -- US02 "narrative description" (flavor_text, cleaned)
+      hp, attack, defense,
+      special_attack, special_defense, speed  INT   -- US02 "core statistics"
+      localized_name  VARCHAR(120)           -- proprietary (US03)
+      region          VARCHAR(120)           -- proprietary (US03)
+      internal_tags   VARCHAR(255)           -- proprietary (US03; CSV, or its own child table)
+      created_at      TIMESTAMP
+      updated_at      TIMESTAMP
+
+    pokemon_ability                          -- US01 "skills" (1..n)
+      id            BIGINT   PK
+      pokemon_id    BIGINT   FK -> pokemon(id), NOT NULL
+      name          VARCHAR(80)  NOT NULL
+      is_hidden     BOOLEAN
+
+    pokemon_evolution                        -- US02 "evolutionary lineage" (ordered)
+      id            BIGINT   PK
+      pokemon_id    BIGINT   FK -> pokemon(id), NOT NULL
+      species_name  VARCHAR(80)  NOT NULL
+      stage         INT                      -- 1,2,3... ordering of the chain
+
+    users                                    -- secondary collection
+      id             BIGINT       PK
+      username       VARCHAR(50)  UNIQUE, NOT NULL   -- descriptive
+      email          VARCHAR(120) UNIQUE, NOT NULL   -- descriptive
+      password_hash  VARCHAR(255) NOT NULL           -- BCrypt hash
+      role           VARCHAR(20)  NOT NULL           -- USER / ADMIN
+      created_at     TIMESTAMP
+
+    Relationships: pokemon 1—* pokemon_ability, pokemon 1—* pokemon_evolution.
+    Manage the schema with a migration tool (Flyway/Liquibase) and ship seed data for the demo.
+</Database_Schema>
 
 
 <Error_Handling>
@@ -152,11 +193,25 @@ src/
 </Error_Handling>
 
 
+<Containerization>
+    Ship a multi-stage Dockerfile for the app and a docker-compose.yml with two services:
+      - db:  image postgres:16; env POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD;
+             a named volume for persistence; healthcheck (pg_isready); port 5432.
+      - app: built from the Dockerfile; depends_on db with condition: service_healthy;
+             datasource via env vars (SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/pokedex,
+             SPRING_DATASOURCE_USERNAME, SPRING_DATASOURCE_PASSWORD); port 8080.
+    The app reaches the DB by the compose service name `db` (never localhost). Dockerfile:
+    stage 1 builds with maven:3.9-eclipse-temurin-21 (cache dependencies), stage 2 runs the jar on
+    eclipse-temurin:21-jre-alpine. The whole stack must come up with a single `docker compose up`,
+    pre-populated with seed data.
+</Containerization>
+
+
 <Task>
     Guide the complete, incremental BACKEND implementation of the Pokédex API, user story by user story
     (US01 → US04, then the Auth API), applying TDD, SOLID and hexagonal architecture at every step,
-    and honoring <Concrete_Component_Map>, <PokeAPI_Integration>, <REST_API_Contract>, <Data_Model>
-    and <Error_Handling>.
+    and honoring <Concrete_Component_Map>, <PokeAPI_Integration>, <REST_API_Contract>,
+    <Database_Schema>, <Error_Handling> and <Containerization>.
 </Task>
 
 
@@ -170,7 +225,8 @@ src/
     4. Centralized error handling per <Error_Handling>, with coherent 404 / 400 / 401 / 403 / 409.
     5. Sufficient test coverage: unit tests in `core` (no Spring context) and integration in adapters
        (Testcontainers for PostgreSQL, mocked or WireMock-backed PokeAPI).
-    6. Caching for PokeAPI responses and demo (seed) data for the database.
+    6. Caching for PokeAPI responses, demo (seed) data, and containerization per <Containerization>
+       (app + PostgreSQL brought up with a single `docker compose up`).
 </Criteria>
 
 
@@ -198,5 +254,6 @@ src/
     1. The failing test(s) first (Red), noting their layer.
     2. The port(s) and domain, then the use case, then the adapter(s) — with a one-line design rationale each.
     3. The passing implementation (Green) and any refactor.
-    4. A short verification checklist: SOLID, hexagonal boundaries, coverage, error handling, caching, seed data.
+    4. A short verification checklist: SOLID, hexagonal boundaries, coverage, error handling, caching,
+       seed data, and containerization (docker compose up).
 </Output_format>
