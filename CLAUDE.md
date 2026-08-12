@@ -21,6 +21,9 @@ commands below apply once the Spring Boot project is generated.
 
 ## Repository layout
 
+- `backend/` — the Java + Spring Boot service (its own `pom.xml`, `mvnw`, `src/`,
+  `Dockerfile`). All backend code lives here. A future `frontend/` folder will sit
+  alongside it. `docker-compose.yml` at the repo root orchestrates both.
 - `docs/api_doc.md` / `docs/api_doc.html` — the single source of truth for the API
   contract: PokeAPI endpoints per user story, our own CRUD, the auth API, the
   database entities and the architecture-layer mapping. **Read this before writing
@@ -77,14 +80,20 @@ Data gotchas: `weight` is in hectograms (÷10 = kg); `flavor_text` contains `\n`
 that must be stripped; `genera`/`flavor_text_entries` are per-language lists (filter
 by `language.name`).
 
-## Development commands (once scaffolded — Maven)
+## Development commands (Maven wrapper — run from `backend/`)
+
+Maven is NOT installed; use the wrapper (`.\mvnw.cmd` on Windows). Java 21 is installed.
 
 ```bash
-mvn clean verify          # compile + run all tests
-mvn test                  # unit tests only
-mvn test -Dtest=ClassName#method   # a single test
-mvn spring-boot:run       # run the app locally
-docker compose up         # run app + PostgreSQL (with seed data)
+cd backend
+./mvnw clean verify                 # compile + run all tests
+./mvnw test                         # run tests
+./mvnw test -Dtest=ClassName#method # a single test
+./mvnw spring-boot:run              # run the app locally
+```
+
+```bash
+docker compose up   # from repo root: app (built from ./backend) + PostgreSQL + seed data
 ```
 
 ## Git workflow — Gitflow (MANDATORY)
