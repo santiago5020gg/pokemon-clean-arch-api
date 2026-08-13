@@ -16,6 +16,17 @@ import { Icon } from '../../components/ui/Icon'
 
 const PAGE_SIZE = 20
 
+/** Replication count bounds (mirrors the backend cap of Gen 1 = 151). */
+const DEFAULT_COUNT = 100
+const MIN_COUNT = 1
+const MAX_COUNT = 151
+
+function clampCount(raw: string): number {
+  const parsed = Number.parseInt(raw, 10)
+  if (Number.isNaN(parsed)) return DEFAULT_COUNT
+  return Math.min(Math.max(parsed, MIN_COUNT), MAX_COUNT)
+}
+
 /** US01 list container + US03 replication trigger. */
 export function PokemonListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -27,6 +38,7 @@ export function PokemonListPage() {
 
   const [filter, setFilter] = useState('')
   const [syncing, setSyncing] = useState(false)
+  const [count, setCount] = useState(String(DEFAULT_COUNT))
 
   const visible = useMemo(() => {
     const all = data?.content ?? []
@@ -46,8 +58,9 @@ export function PokemonListPage() {
     }
     setSyncing(true)
     try {
-      const result = await syncPokemon({ limit: PAGE_SIZE, offset: page * PAGE_SIZE })
+      const result = await syncPokemon({ limit: clampCount(count), offset: 0 })
       notify(`Replicated ${result.synced} Pokémon (${result.created} new)`, 'success')
+      if (page !== 0) setSearchParams({ page: '0' })
       await refresh()
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Sync failed'
@@ -69,10 +82,24 @@ export function PokemonListPage() {
             data.
           </p>
         </div>
-        <Button onClick={handleSync} loading={syncing}>
-          <Icon name="sparkles" size={16} />
-          Replicate from PokeAPI
-        </Button>
+        <div className="flex flex-wrap items-end gap-3">
+          {isAuthenticated && (
+            <div className="w-32">
+              <Input
+                label="How many to replicate"
+                type="number"
+                min={MIN_COUNT}
+                max={MAX_COUNT}
+                value={count}
+                onChange={(e) => setCount(e.target.value)}
+              />
+            </div>
+          )}
+          <Button onClick={handleSync} loading={syncing}>
+            <Icon name="sparkles" size={16} />
+            Replicate from PokeAPI
+          </Button>
+        </div>
       </section>
 
       {data && data.content.length > 0 && (
