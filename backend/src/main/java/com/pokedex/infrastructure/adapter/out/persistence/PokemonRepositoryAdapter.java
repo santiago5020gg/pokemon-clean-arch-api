@@ -3,7 +3,9 @@ package com.pokedex.infrastructure.adapter.out.persistence;
 import com.pokedex.core.domain.Pokemon;
 import com.pokedex.core.dto.PageResult;
 import com.pokedex.core.ports.out.PokemonRepositoryPort;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,8 +29,11 @@ public class PokemonRepositoryAdapter implements PokemonRepositoryPort {
 
     @Override
     @Transactional(readOnly = true)
-    public PageResult<Pokemon> findAll(int page, int size) {
-        var result = jpa.findAll(PageRequest.of(page, size, Sort.by("id").ascending()));
+    public PageResult<Pokemon> findAll(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+        Page<PokemonEntity> result = query == null || query.isBlank()
+                ? jpa.findAll(pageable)
+                : jpa.findByNameContainingIgnoreCase(query.trim(), pageable);
         return new PageResult<>(
                 result.getContent().stream().map(PokemonPersistenceMapper::toDomain).toList(),
                 result.getNumber(),

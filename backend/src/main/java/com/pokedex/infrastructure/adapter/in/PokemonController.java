@@ -37,9 +37,10 @@ public class PokemonController {
 
     @GetMapping
     public PageResult<PokemonSummaryDto> list(
+            @RequestParam(required = false) String q,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        return pokemonService.list(page, size);
+        return pokemonService.list(q, page, size);
     }
 
     @GetMapping("/{id}")

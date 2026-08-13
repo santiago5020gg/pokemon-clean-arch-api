@@ -53,7 +53,7 @@ class PokemonControllerTest {
 
     @Test
     void list_isPublic_returnsOkWithPage() throws Exception {
-        when(pokemonService.list(0, 20)).thenReturn(new PageResult<>(
+        when(pokemonService.list(null, 0, 20)).thenReturn(new PageResult<>(
                 List.of(new PokemonSummaryDto(1L, "bulbasaur", "s.png", "Seed Pokémon", 69, List.of("overgrow"))),
                 0, 20, 1L, 1));
 
@@ -61,6 +61,19 @@ class PokemonControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].name").value("bulbasaur"))
                 .andExpect(jsonPath("$.totalElements").value(1));
+    }
+
+    @Test
+    void list_forwardsSearchQuery() throws Exception {
+        when(pokemonService.list("char", 0, 20)).thenReturn(new PageResult<>(
+                List.of(new PokemonSummaryDto(4L, "charmander", "s.png", "Lizard Pokémon", 85, List.of("blaze"))),
+                0, 20, 1L, 1));
+
+        mockMvc.perform(get("/api/pokemon?q=char&page=0&size=20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[0].name").value("charmander"));
+
+        verify(pokemonService).list("char", 0, 20);
     }
 
     @Test
