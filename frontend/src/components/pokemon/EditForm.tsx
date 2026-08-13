@@ -4,7 +4,11 @@ import { Input } from '../ui/Input'
 import { Button } from '../ui/Button'
 
 interface EditFormProps {
-  initial: PokemonUpdateRequest
+  /**
+   * Current proprietary values. A freshly replicated Pokémon (US03) has null
+   * localizedName/region until it is edited (US04), so both may be null here.
+   */
+  initial: { localizedName: string | null; region: string | null; internalTags: string[] }
   onSubmit: (values: PokemonUpdateRequest) => void
   onCancel: () => void
   submitting?: boolean
@@ -34,8 +38,8 @@ function parseTags(raw: string): string[] {
 
 /** Edit the proprietary fields of a Pokémon (US04). */
 export function EditForm({ initial, onSubmit, onCancel, submitting = false, serverErrors }: EditFormProps) {
-  const [localizedName, setLocalizedName] = useState(initial.localizedName)
-  const [region, setRegion] = useState(initial.region)
+  const [localizedName, setLocalizedName] = useState(initial.localizedName ?? '')
+  const [region, setRegion] = useState(initial.region ?? '')
   const [tagsRaw, setTagsRaw] = useState(initial.internalTags.join(', '))
   const [errors, setErrors] = useState<Errors>({})
 
