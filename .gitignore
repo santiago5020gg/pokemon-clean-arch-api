@@ -67,3 +67,7 @@ ejemplos-solid/
 
 # Claude Code — ephemeral validate-before-push GO marker (machine-local)
 .claude/.push-approved
+
+# QA screenshots — disposable evidence captured by the qa-playwright-mcp skill.
+# Only these are ignored (not all PNGs): they live in qa/ with a qa- prefix.
+qa/qa-*.png
