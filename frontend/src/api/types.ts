@@ -42,8 +42,9 @@ export interface PokemonDetail {
   stats: Stats
   description: string
   evolutions: string[]
-  localizedName: string
-  region: string
+  /** Proprietary fields (US03/US04): null until set on a freshly replicated Pokémon. */
+  localizedName: string | null
+  region: string | null
   internalTags: string[]
 }
 
