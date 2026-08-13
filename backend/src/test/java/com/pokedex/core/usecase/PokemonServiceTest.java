@@ -54,9 +54,9 @@ class PokemonServiceTest {
             PageResult<Pokemon> page = new PageResult<>(
                     List.of(PokemonFixtures.bulbasaur(), PokemonFixtures.ivysaur()),
                     0, 20, 2L, 1);
-            when(repository.findAll(0, 20)).thenReturn(page);
+            when(repository.findAll(null, 0, 20)).thenReturn(page);
 
-            PageResult<PokemonSummaryDto> result = service.list(0, 20);
+            PageResult<PokemonSummaryDto> result = service.list(null, 0, 20);
 
             assertThat(result.content()).hasSize(2);
             assertThat(result.content().get(0).name()).isEqualTo("bulbasaur");
@@ -67,12 +67,32 @@ class PokemonServiceTest {
 
         @Test
         void list_normalizesNegativePageAndNonPositiveSize() {
-            when(repository.findAll(0, 20)).thenReturn(
+            when(repository.findAll(null, 0, 20)).thenReturn(
                     new PageResult<>(List.of(), 0, 20, 0L, 0));
 
-            service.list(-5, 0);
+            service.list(null, -5, 0);
 
-            verify(repository).findAll(eq(0), eq(20));
+            verify(repository).findAll(null, 0, 20);
+        }
+
+        @Test
+        void list_passesTrimmedQueryToRepository() {
+            when(repository.findAll("char", 0, 20)).thenReturn(
+                    new PageResult<>(List.of(), 0, 20, 0L, 0));
+
+            service.list("  char  ", 0, 20);
+
+            verify(repository).findAll("char", 0, 20);
+        }
+
+        @Test
+        void list_normalizesBlankQueryToNull() {
+            when(repository.findAll(null, 0, 20)).thenReturn(
+                    new PageResult<>(List.of(), 0, 20, 0L, 0));
+
+            service.list("   ", 0, 20);
+
+            verify(repository).findAll(null, 0, 20);
         }
     }
 

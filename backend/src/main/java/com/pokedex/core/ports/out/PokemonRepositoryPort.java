@@ -10,7 +10,12 @@ import java.util.Optional;
  */
 public interface PokemonRepositoryPort {
 
-    PageResult<Pokemon> findAll(int page, int size);
+    /**
+     * Page through stored Pokémon, optionally filtered by a case-insensitive name fragment.
+     *
+     * @param query name fragment to match; {@code null}/blank returns all
+     */
+    PageResult<Pokemon> findAll(String query, int page, int size);
 
     Optional<Pokemon> findById(Long id);
 

@@ -6,8 +6,16 @@ package com.pokedex.core.dto;
  */
 public record SyncRequest(Integer limit, Integer offset) {
 
+    /** Default page size when the caller does not specify one. */
+    private static final int DEFAULT_LIMIT = 20;
+    /** Hard upper bound: replicating N Pokémon costs ~3 PokeAPI calls each, so cap at Gen 1 (151). */
+    private static final int MAX_LIMIT = 151;
+
     public int limitOrDefault() {
-        return limit == null || limit <= 0 ? 20 : limit;
+        if (limit == null || limit <= 0) {
+            return DEFAULT_LIMIT;
+        }
+        return Math.min(limit, MAX_LIMIT);
     }
 
     public int offsetOrDefault() {

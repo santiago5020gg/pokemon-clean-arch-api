@@ -14,7 +14,7 @@ function wrapper({ children }: { children: ReactNode }) {
 
 describe('usePokemonList', () => {
   it('resolves the paginated page', async () => {
-    const { result } = renderHook(() => usePokemonList(0, 20), { wrapper })
+    const { result } = renderHook(() => usePokemonList('', 0, 20), { wrapper })
     expect(result.current.isLoading).toBe(true)
     await waitFor(() => expect(result.current.page).toEqual(listPage))
     expect(result.current.error).toBeUndefined()
@@ -26,7 +26,7 @@ describe('usePokemonList', () => {
         HttpResponse.json({ status: 500, message: 'boom', fieldErrors: null }, { status: 500 }),
       ),
     )
-    const { result } = renderHook(() => usePokemonList(0, 20), { wrapper })
+    const { result } = renderHook(() => usePokemonList('', 0, 20), { wrapper })
     await waitFor(() => expect(result.current.error).toBeDefined())
     expect(result.current.error.status).toBe(500)
   })

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { usePokemonList } from '../../hooks/usePokemonList'
 import { useAuth } from '../../context/AuthContext'
@@ -16,26 +16,51 @@ import { Icon } from '../../components/ui/Icon'
 
 const PAGE_SIZE = 20
 
-/** US01 list container + US03 replication trigger. */
+/** Replication count bounds (mirrors the backend cap of Gen 1 = 151). */
+const DEFAULT_COUNT = 100
+const MIN_COUNT = 1
+const MAX_COUNT = 151
+
+function clampCount(raw: string): number {
+  const parsed = Number.parseInt(raw, 10)
+  if (Number.isNaN(parsed)) return DEFAULT_COUNT
+  return Math.min(Math.max(parsed, MIN_COUNT), MAX_COUNT)
+}
+
+/** URL search params for (query, page), omitting an empty query. */
+function listParams(q: string, page: number): Record<string, string> {
+  const params: Record<string, string> = { page: String(page) }
+  if (q) params.q = q
+  return params
+}
+
+/** US01 list container (server-side search + pagination) + US03 replication trigger. */
 export function PokemonListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const q = searchParams.get('q') ?? ''
   const page = Math.max(0, Number(searchParams.get('page') ?? '0'))
-  const { page: data, error, isLoading, refresh } = usePokemonList(page, PAGE_SIZE)
+  const { page: data, error, isLoading, refresh } = usePokemonList(q, page, PAGE_SIZE)
   const navigate = useNavigate()
   const { isAuthenticated } = useAuth()
   const { notify } = useToast()
 
-  const [filter, setFilter] = useState('')
+  const [search, setSearch] = useState(q)
   const [syncing, setSyncing] = useState(false)
+  const [count, setCount] = useState(String(DEFAULT_COUNT))
 
-  const visible = useMemo(() => {
-    const all = data?.content ?? []
-    const q = filter.trim().toLowerCase()
-    return q ? all.filter((p) => p.name.toLowerCase().includes(q)) : all
-  }, [data, filter])
+  // Debounce the search box: sync it into the URL (and reset to page 0) so search
+  // runs server-side and composes with pagination.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      const trimmed = search.trim()
+      if (trimmed === q) return
+      setSearchParams(listParams(trimmed, 0))
+    }, 300)
+    return () => clearTimeout(handle)
+  }, [search, q, setSearchParams])
 
   function goToPage(next: number) {
-    setSearchParams({ page: String(next) })
+    setSearchParams(listParams(q, next))
   }
 
   async function handleSync() {
@@ -46,8 +71,9 @@ export function PokemonListPage() {
     }
     setSyncing(true)
     try {
-      const result = await syncPokemon({ limit: PAGE_SIZE, offset: page * PAGE_SIZE })
+      const result = await syncPokemon({ limit: clampCount(count), offset: 0 })
       notify(`Replicated ${result.synced} Pokémon (${result.created} new)`, 'success')
+      setSearchParams(listParams(q, 0))
       await refresh()
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Sync failed'
@@ -69,19 +95,33 @@ export function PokemonListPage() {
             data.
           </p>
         </div>
-        <Button onClick={handleSync} loading={syncing}>
-          <Icon name="sparkles" size={16} />
-          Replicate from PokeAPI
-        </Button>
+        <div className="flex flex-wrap items-end gap-3">
+          {isAuthenticated && (
+            <div className="w-32">
+              <Input
+                label="How many to replicate"
+                type="number"
+                min={MIN_COUNT}
+                max={MAX_COUNT}
+                value={count}
+                onChange={(e) => setCount(e.target.value)}
+              />
+            </div>
+          )}
+          <Button onClick={handleSync} loading={syncing}>
+            <Icon name="sparkles" size={16} />
+            Replicate from PokeAPI
+          </Button>
+        </div>
       </section>
 
-      {data && data.content.length > 0 && (
+      {((data && data.content.length > 0) || q) && (
         <div className="max-w-xs">
           <Input
-            label="Filter this page"
+            label="Search Pokémon"
             placeholder="Search by name…"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       )}
@@ -99,7 +139,7 @@ export function PokemonListPage() {
         />
       )}
 
-      {data && data.content.length === 0 && !isLoading && (
+      {data && data.content.length === 0 && !isLoading && !q && (
         <EmptyState
           icon="pokeball"
           title="No Pokémon yet"
@@ -113,18 +153,18 @@ export function PokemonListPage() {
         />
       )}
 
-      {data && data.content.length > 0 && visible.length === 0 && (
+      {data && data.content.length === 0 && !isLoading && q && (
         <EmptyState
           icon="search"
-          title="No matches on this page"
-          message={`Nothing named "${filter}" here. Try another page or clear the filter.`}
+          title="No results"
+          message={`Nothing matches "${q}". Try another name.`}
         />
       )}
 
-      {visible.length > 0 && (
+      {data && data.content.length > 0 && (
         <>
-          <PokemonGrid pokemon={visible} onSelect={(id) => navigate(`/pokemon/${id}`)} />
-          {data && data.totalPages > 1 && (
+          <PokemonGrid pokemon={data.content} onSelect={(id) => navigate(`/pokemon/${id}`)} />
+          {data.totalPages > 1 && (
             <Pagination page={page} totalPages={data.totalPages} onChange={goToPage} />
           )}
         </>

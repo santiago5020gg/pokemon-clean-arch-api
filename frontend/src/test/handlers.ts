@@ -12,7 +12,23 @@ import {
  * these with `server.use(...)` to exercise error and edge cases.
  */
 export const handlers = [
-  http.get('/api/pokemon', () => HttpResponse.json(listPage)),
+  http.get('/api/pokemon', ({ request }) => {
+    const url = new URL(request.url)
+    const q = (url.searchParams.get('q') ?? '').toLowerCase()
+    const page = Number(url.searchParams.get('page') ?? '0')
+    const size = Number(url.searchParams.get('size') ?? '20')
+    const matches = q
+      ? listPage.content.filter((p) => p.name.toLowerCase().includes(q))
+      : listPage.content
+    const start = page * size
+    return HttpResponse.json({
+      content: matches.slice(start, start + size),
+      page,
+      size,
+      totalElements: matches.length,
+      totalPages: Math.max(1, Math.ceil(matches.length / size)),
+    })
+  }),
 
   http.get('/api/pokemon/:id', ({ params }) => {
     if (params.id === '999') {

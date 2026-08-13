@@ -32,10 +32,11 @@ public class PokemonService implements PokemonServicePort {
     }
 
     @Override
-    public PageResult<PokemonSummaryDto> list(int page, int size) {
+    public PageResult<PokemonSummaryDto> list(String query, int page, int size) {
         int safePage = Math.max(page, 0);
         int safeSize = size <= 0 ? 20 : size;
-        PageResult<Pokemon> stored = repository.findAll(safePage, safeSize);
+        String normalizedQuery = query == null || query.isBlank() ? null : query.trim();
+        PageResult<Pokemon> stored = repository.findAll(normalizedQuery, safePage, safeSize);
         return stored.map(PokemonMapper::toSummary);
     }
 

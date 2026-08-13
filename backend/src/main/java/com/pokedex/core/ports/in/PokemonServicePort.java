@@ -14,7 +14,12 @@ import com.pokedex.core.dto.SyncResult;
  */
 public interface PokemonServicePort {
 
-    PageResult<PokemonSummaryDto> list(int page, int size);
+    /**
+     * List replicated Pokémon, optionally filtered by a name query (US01).
+     *
+     * @param query case-insensitive name fragment; {@code null}/blank means no filter
+     */
+    PageResult<PokemonSummaryDto> list(String query, int page, int size);
 
     PokemonDetailDto getById(Long id);
 

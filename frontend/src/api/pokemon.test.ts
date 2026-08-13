@@ -16,12 +16,13 @@ describe('pokemon endpoints', () => {
   beforeEach(() => setToken('jwt-test-token'))
 
   it('builds stable SWR keys from params', () => {
-    expect(listKey(2, 20)).toBe('/pokemon?page=2&size=20')
+    expect(listKey('', 2, 20)).toBe('/pokemon?page=2&size=20')
+    expect(listKey('char', 0, 20)).toBe('/pokemon?page=0&size=20&q=char')
     expect(detailKey(1)).toBe('/pokemon/1')
   })
 
   it('fetches the paginated list', async () => {
-    await expect(fetchPokemonList(0, 20)).resolves.toEqual(listPage)
+    await expect(fetchPokemonList('', 0, 20)).resolves.toEqual(listPage)
   })
 
   it('fetches a detail', async () => {
