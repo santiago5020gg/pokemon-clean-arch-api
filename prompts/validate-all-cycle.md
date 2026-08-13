@@ -39,10 +39,18 @@
 <Criteria>
     0. Run this cycle ONLY right before a push to any branch. If no push is about
        to happen, do not run it.
-    1. No code is pushed until backend, frontend, security, AND qa all pass.
+    1. Nothing is pushed until every check that applies to the diff passes. Which
+       checks apply is decided by what the diff touches:
+       - A code-standard check (backend / frontend) runs only if its layer changed.
+       - security-audit ALWAYS runs.
+       - QA runs only when the diff contains code — any file under backend/ or
+         frontend/, or any *.sql migration. A docs/config-only push (Markdown,
+         prompts/, .claude/, .gitignore, compose/CI, images — nothing under
+         backend/, frontend/, or *.sql) runs security-audit ALONE and skips QA.
     2. Static and security validation (backend, frontend, security-audit) runs
-       first, in parallel. QA runs only after those three are green — testing a
-       build that already violates standards or ships a vulnerability wastes a run.
+       first, in parallel. QA runs only after those are green AND only when the diff
+       has code — testing a build that already violates standards or ships a
+       vulnerability wastes a run, and a browser run adds nothing on non-code files.
     3. Every failure found is fixed in this cycle, then the affected checks are
        re-run to confirm the fix (never assume a fix worked — verify with evidence).
     4. Each skill's own standard is authoritative for what "passing" means; do not
@@ -51,19 +59,23 @@
 
 
 <Instructions>
-    1. Dispatch three background subagents in parallel:
-       a. backend-hexagonal-standard — validate backend code standards.
-       b. frontend-component-standard — validate frontend code standards.
+    1. Dispatch the applicable background subagents in parallel (skip any whose
+       layer did not change; on a docs/config-only push this is c alone):
+       a. backend-hexagonal-standard — validate backend code standards (only if
+          backend/ changed).
+       b. frontend-component-standard — validate frontend code standards (only if
+          frontend/ changed).
        c. security-audit — detect vulnerabilities across backend, PostgreSQL, and
-          frontend.
-    2. Collect the three reports. If any reports failures, fix them, then re-run
-       only the affected check(s) until all three are green.
-    3. Only when 1a, 1b, and 1c all pass, dispatch a qa-playwright-mcp subagent to
-       validate the app end-to-end.
+          frontend (always).
+    2. Collect the reports. If any reports failures, fix them, then re-run
+       only the affected check(s) until all are green.
+    3. Only when the applicable checks from step 1 all pass AND the diff contains
+       code, dispatch a qa-playwright-mcp subagent to validate the app end-to-end.
+       On a docs/config-only push, skip this step.
     4. If QA reports any issue, fix it and restart the cycle from step 1 (a code
        fix can re-break standards or introduce a vulnerability).
-    5. When all four checks pass, report the cycle as green and clear to push.
-       Otherwise, block the push and state what is still failing.
+    5. When every applicable check passes, report the cycle as green and clear to
+       push. Otherwise, block the push and state what is still failing.
 </Instructions>
 
 

@@ -65,6 +65,18 @@ Core calls: `browser_navigate`, `browser_snapshot`, `browser_click`, `browser_ty
 `browser_console_messages` + `browser_network_requests` to catch JS errors and failed
 API calls hiding behind a working-looking UI.
 
+### Screenshots — where they go (MANDATORY)
+
+Every screenshot you capture with `browser_take_screenshot` **must** be written
+**inside the `qa/` folder with a `qa-` filename prefix** — i.e. the path
+`qa/qa-<short-descriptive-name>.png` (e.g. `qa/qa-list-full.png`,
+`qa/qa-detail-charizard.png`). Never write a screenshot to the repo root or anywhere
+outside `qa/`, and never without the `qa-` prefix. These are the only image files the
+project treats as disposable QA artifacts (they are git-ignored via `qa/qa-*.png`), so
+a screenshot placed elsewhere leaks into the working tree as an untracked stray. Pass
+the full `qa/qa-*.png` path explicitly as the screenshot filename — do not rely on a
+default location.
+
 ## Files you produce
 
 Create the `qa/` folder at the repo root if missing.
@@ -83,7 +95,7 @@ start of the session. Each issue entry:
 - Steps to reproduce:
 - Expected:
 - Actual:
-- Evidence: qa/evidence/<screenshot>.png
+- Evidence: qa/qa-<short-descriptive-name>.png
 ```
 
 ## What to test (this app's real flows)
@@ -106,4 +118,5 @@ Read routes are public; **write actions (sync/edit/delete) require login.**
 - Navigating a browser before Step 0 was answered.
 - Reaching for `curl`, a `.spec.ts` file, or Vitest to "test the flow."
 - Writing an issue filename containing `:`.
+- Saving a screenshot outside `qa/`, or without the `qa-` prefix (it becomes an untracked stray).
 - Marking a case PASS without having driven the UI for it.
