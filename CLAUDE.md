@@ -100,15 +100,15 @@ docker compose up   # from repo root: app (built from ./backend) + PostgreSQL + 
 
 | Branch | Purpose |
 |--------|---------|
-| `main` | Stable line. Only receives merges from `dev` once verified. |
-| `dev`  | Integration branch (repo default). All completed features merge here first. |
-| `feature/*` | One branch per change, cut from `dev`. |
+| `master` | Stable line. Only receives merges from `develop` once verified. |
+| `develop`  | Integration branch (repo default). All completed features merge here first. |
+| `feature/*` | One branch per change, cut from `develop`. |
 
-For **every** change: create `feature/<desc>` from `dev` → work with tests →
-merge into `dev` with `--no-ff` → **delete the feature branch** (`git branch -d`) →
-merge `dev` into `main` only when verified. Deleting the feature branch right after
-it lands in `dev` is part of the workflow — keep the branch list clean.
-Never commit directly to `main`; never skip the feature branch.
+For **every** change: create `feature/<desc>` from `develop` → work with tests →
+merge into `develop` with `--no-ff` → **delete the feature branch** (`git branch -d`) →
+merge `develop` into `master` only when verified. Deleting the feature branch right after
+it lands in `develop` is part of the workflow — keep the branch list clean.
+Never commit directly to `master`; never skip the feature branch.
 
 Commit messages follow **Conventional Commits** (`feat:`, `fix:`, `docs:`,
 `chore:`, `test:`, `refactor:`). On Windows PowerShell, pass multi-line commit
