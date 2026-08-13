@@ -60,3 +60,7 @@ yarn-error.log*
 # ---- Exercise statement (do not publish the company's document) ----
 *.pdf
 
+
+# Local scratch (not part of the project)
+ejemplos-solid/
+

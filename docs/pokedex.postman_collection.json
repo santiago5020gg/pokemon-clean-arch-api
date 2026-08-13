@@ -1,0 +1,201 @@
+{
+  "info": {
+    "name": "Pokedex API — by User Story",
+    "description": "Pokemon Clean Architecture API (Ballast Lane), organized by user story like docs/api_doc.html. Each story folder shows BOTH the external PokeAPI endpoints it consumes (with params) AND our own endpoint.\n\nHOW TO USE:\n1. Run '0. Auth (run first) > Login (admin)' — it auto-saves the JWT into {{token}}.\n2. Then explore any user story. '[PokeAPI]' requests hit the public PokeAPI; '[Our API]' requests hit our service.\n\nSeeded credentials: admin / admin123.\nVariables: {{baseUrl}}=http://localhost:8080 , {{pokeapi}}=https://pokeapi.co/api/v2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "pokeapi", "value": "https://pokeapi.co/api/v2" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Auth (run first)",
+      "description": "Auxiliary Users/Auth API. Read routes are public; write routes need the Bearer token from Login.",
+      "item": [
+        {
+          "name": "Register — POST /api/auth/register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/register", "host": ["{{baseUrl}}"], "path": ["api", "auth", "register"] },
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"ash\",\n  \"email\": \"ash@pokedex.io\",\n  \"password\": \"s3cret123\"\n}" }
+          }
+        },
+        {
+          "name": "Login (admin) — POST /api/auth/login",
+          "event": [
+            { "listen": "test", "script": { "type": "text/javascript", "exec": [
+              "const j = pm.response.json();",
+              "if (j.token) { pm.collectionVariables.set('token', j.token); console.log('JWT saved'); }"
+            ] } }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] },
+            "body": { "mode": "raw", "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Story 01 — Pokemon Enumeration",
+      "description": "Browse Pokemon via paginated results showing sprite, category, mass and skills. Needs 3 PokeAPI endpoints (list + detail + species), exposed by our GET /api/pokemon.",
+      "item": [
+        {
+          "name": "[PokeAPI] 1. List (pagination: name + url only) — GET /pokemon",
+          "request": {
+            "method": "GET",
+            "description": "US01 'paginated results'. Returns only name + url per Pokemon (N+1 → justifies caching). Params: limit, offset.",
+            "url": {
+              "raw": "{{pokeapi}}/pokemon?limit=20&offset=0",
+              "host": ["{{pokeapi}}"], "path": ["pokemon"],
+              "query": [{ "key": "limit", "value": "20" }, { "key": "offset", "value": "0" }]
+            }
+          }
+        },
+        {
+          "name": "[PokeAPI] 2. Detail (sprite, mass=weight, skills=abilities) — GET /pokemon/{id}",
+          "request": {
+            "method": "GET",
+            "description": "US01 'sprite, mass, skills'. sprite → sprites.front_default; mass → weight (hectograms ÷10=kg); skills → abilities[].ability.name.",
+            "url": { "raw": "{{pokeapi}}/pokemon/1", "host": ["{{pokeapi}}"], "path": ["pokemon", "1"] }
+          }
+        },
+        {
+          "name": "[PokeAPI] 3. Species (category=genera) — GET /pokemon-species/{id}",
+          "request": {
+            "method": "GET",
+            "description": "US01 'category'. category → genera[] filtered by language.name == 'en' → .genus (e.g. 'Seed Pokemon'). Not present in /pokemon/{id}.",
+            "url": { "raw": "{{pokeapi}}/pokemon-species/1", "host": ["{{pokeapi}}"], "path": ["pokemon-species", "1"] }
+          }
+        },
+        {
+          "name": "[Our API] List (paginated) — GET /api/pokemon",
+          "request": {
+            "method": "GET",
+            "description": "Our endpoint that returns the enumeration (sprite, category, weight, abilities) from the local DB. Public.",
+            "url": {
+              "raw": "{{baseUrl}}/api/pokemon?page=0&size=20",
+              "host": ["{{baseUrl}}"], "path": ["api", "pokemon"],
+              "query": [{ "key": "page", "value": "0" }, { "key": "size", "value": "20" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Story 02 — Detailed View",
+      "description": "Full data for one Pokemon: image, core statistics, narrative description and evolutionary lineage. Needs 3 PokeAPI endpoints (detail + species + evolution-chain), exposed by our GET /api/pokemon/{id}.",
+      "item": [
+        {
+          "name": "[PokeAPI] 1. Detail (image=official-artwork, core stats=stats) — GET /pokemon/{id}",
+          "request": {
+            "method": "GET",
+            "description": "US02 'image, core statistics'. image → sprites.other.official-artwork.front_default; core statistics → stats[].base_stat + stats[].stat.name.",
+            "url": { "raw": "{{pokeapi}}/pokemon/1", "host": ["{{pokeapi}}"], "path": ["pokemon", "1"] }
+          }
+        },
+        {
+          "name": "[PokeAPI] 2. Species (narrative description=flavor_text) — GET /pokemon-species/{id}",
+          "request": {
+            "method": "GET",
+            "description": "US02 'narrative description'. description → flavor_text_entries[] filtered by language.name == 'en' (strip \\n and \\f).",
+            "url": { "raw": "{{pokeapi}}/pokemon-species/1", "host": ["{{pokeapi}}"], "path": ["pokemon-species", "1"] }
+          }
+        },
+        {
+          "name": "[PokeAPI] 3. Evolution chain (evolutionary lineage) — GET /evolution-chain/{id}",
+          "request": {
+            "method": "GET",
+            "description": "US02 'evolutionary lineage'. Recursive: walk chain.evolves_to[] (bulbasaur → ivysaur → venusaur).",
+            "url": { "raw": "{{pokeapi}}/evolution-chain/1", "host": ["{{pokeapi}}"], "path": ["evolution-chain", "1"] }
+          }
+        },
+        {
+          "name": "[Our API] Detail — GET /api/pokemon/{id}",
+          "request": {
+            "method": "GET",
+            "description": "Our endpoint returning image, stats, description, evolutions and proprietary fields from the local DB. Public.",
+            "url": { "raw": "{{baseUrl}}/api/pokemon/1", "host": ["{{baseUrl}}"], "path": ["api", "pokemon", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Story 03 — Data Synchronization",
+      "description": "Replicate Pokemon from the PokeAPI into the local DB (keeps proprietary fields). No new external endpoint — it reuses the US01/US02 PokeAPI endpoints internally. Our endpoint: POST /api/pokemon/sync (protected).",
+      "item": [
+        {
+          "name": "[Our API] Sync from PokeAPI — POST /api/pokemon/sync",
+          "request": {
+            "method": "POST",
+            "description": "PROTECTED (run Login first). Body {limit, offset}. Returns {synced, created, updated, items}.",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/pokemon/sync", "host": ["{{baseUrl}}"], "path": ["api", "pokemon", "sync"] },
+            "body": { "mode": "raw", "raw": "{\n  \"limit\": 10,\n  \"offset\": 0\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Story 04 — Local Data Modification",
+      "description": "Update / delete a stored Pokemon with validation (404 if missing, 400 if invalid payload). Our endpoints: PUT and DELETE /api/pokemon/{id} (protected).",
+      "item": [
+        {
+          "name": "[Our API] Update proprietary fields (200) — PUT /api/pokemon/{id}",
+          "request": {
+            "method": "PUT",
+            "description": "Updates localizedName / region / internalTags on the local record. Returns 200 with the updated resource.",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/pokemon/1", "host": ["{{baseUrl}}"], "path": ["api", "pokemon", "1"] },
+            "body": { "mode": "raw", "raw": "{\n  \"localizedName\": \"Bulbasaur ES\",\n  \"region\": \"Kanto\",\n  \"internalTags\": [\"starter\", \"favorite\"]\n}" }
+          }
+        },
+        {
+          "name": "[Our API] Update missing id (expect 404) — PUT /api/pokemon/{id}",
+          "request": {
+            "method": "PUT",
+            "description": "Valid payload against a non-existent id → 404 Not Found.",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/pokemon/99999", "host": ["{{baseUrl}}"], "path": ["api", "pokemon", "99999"] },
+            "body": { "mode": "raw", "raw": "{\n  \"localizedName\": \"Nobody\",\n  \"region\": \"Nowhere\"\n}" }
+          }
+        },
+        {
+          "name": "[Our API] Update invalid payload (expect 400) — PUT /api/pokemon/{id}",
+          "request": {
+            "method": "PUT",
+            "description": "Empty localizedName fails bean validation → 400 Bad Request.",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/api/pokemon/1", "host": ["{{baseUrl}}"], "path": ["api", "pokemon", "1"] },
+            "body": { "mode": "raw", "raw": "{\n  \"localizedName\": \"\"\n}" }
+          }
+        },
+        {
+          "name": "[Our API] Delete (204) — DELETE /api/pokemon/{id}",
+          "request": {
+            "method": "DELETE",
+            "description": "Removes the local record. 204 No Content, or 404 if it does not exist.",
+            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "url": { "raw": "{{baseUrl}}/api/pokemon/7", "host": ["{{baseUrl}}"], "path": ["api", "pokemon", "7"] }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -8,11 +8,7 @@ import com.pokedex.core.dto.PokemonDetailDto;
 import com.pokedex.core.dto.PokemonSummaryDto;
 import com.pokedex.core.dto.StatsDto;
 import com.pokedex.core.exception.ResourceNotFoundException;
-import com.pokedex.core.ports.in.DeletePokemonUseCase;
-import com.pokedex.core.ports.in.GetPokemonDetailUseCase;
-import com.pokedex.core.ports.in.ListPokemonUseCase;
-import com.pokedex.core.ports.in.SyncPokemonUseCase;
-import com.pokedex.core.ports.in.UpdatePokemonUseCase;
+import com.pokedex.core.ports.in.PokemonServicePort;
 import com.pokedex.infrastructure.adapter.out.security.JwtAuthenticationFilter;
 import com.pokedex.infrastructure.adapter.out.security.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
@@ -48,15 +44,7 @@ class PokemonControllerTest {
     JwtTokenProvider tokenProvider;
 
     @MockitoBean
-    ListPokemonUseCase listPokemon;
-    @MockitoBean
-    GetPokemonDetailUseCase getPokemonDetail;
-    @MockitoBean
-    SyncPokemonUseCase syncPokemon;
-    @MockitoBean
-    UpdatePokemonUseCase updatePokemon;
-    @MockitoBean
-    DeletePokemonUseCase deletePokemon;
+    PokemonServicePort pokemonService;
 
     private String bearer() {
         return "Bearer " + tokenProvider.generateToken(
@@ -65,7 +53,7 @@ class PokemonControllerTest {
 
     @Test
     void list_isPublic_returnsOkWithPage() throws Exception {
-        when(listPokemon.list(0, 20)).thenReturn(new PageResult<>(
+        when(pokemonService.list(0, 20)).thenReturn(new PageResult<>(
                 List.of(new PokemonSummaryDto(1L, "bulbasaur", "s.png", "Seed Pokémon", 69, List.of("overgrow"))),
                 0, 20, 1L, 1));
 
@@ -77,7 +65,7 @@ class PokemonControllerTest {
 
     @Test
     void getById_returnsDetail() throws Exception {
-        when(getPokemonDetail.getById(1L)).thenReturn(new PokemonDetailDto(
+        when(pokemonService.getById(1L)).thenReturn(new PokemonDetailDto(
                 1L, "bulbasaur", "art.png", new StatsDto(45, 49, 49, 65, 65, 45),
                 "desc", List.of("bulbasaur", "ivysaur"), "Bulba ES", "Kanto", List.of("starter")));
 
@@ -90,7 +78,7 @@ class PokemonControllerTest {
 
     @Test
     void getById_returns404WhenMissing() throws Exception {
-        when(getPokemonDetail.getById(999L)).thenThrow(ResourceNotFoundException.pokemon(999L));
+        when(pokemonService.getById(999L)).thenThrow(ResourceNotFoundException.pokemon(999L));
 
         mockMvc.perform(get("/api/pokemon/999"))
                 .andExpect(status().isNotFound())
@@ -106,7 +94,7 @@ class PokemonControllerTest {
 
     @Test
     void sync_withToken_returns201() throws Exception {
-        when(syncPokemon.sync(any())).thenReturn(
+        when(pokemonService.sync(any())).thenReturn(
                 new com.pokedex.core.dto.SyncResult(0, 0, 0, List.of()));
 
         mockMvc.perform(post("/api/pokemon/sync")
@@ -135,7 +123,7 @@ class PokemonControllerTest {
 
     @Test
     void update_withToken_returns200() throws Exception {
-        when(updatePokemon.update(eq(1L), any())).thenReturn(new PokemonDetailDto(
+        when(pokemonService.update(eq(1L), any())).thenReturn(new PokemonDetailDto(
                 1L, "bulbasaur", "art.png", new StatsDto(45, 49, 49, 65, 65, 45),
                 "desc", List.of(), "New", "Johto", List.of("x")));
 
@@ -151,12 +139,12 @@ class PokemonControllerTest {
     void delete_withToken_returns204() throws Exception {
         mockMvc.perform(delete("/api/pokemon/1").header("Authorization", bearer()))
                 .andExpect(status().isNoContent());
-        verify(deletePokemon).delete(1L);
+        verify(pokemonService).delete(1L);
     }
 
     @Test
     void delete_missing_returns404() throws Exception {
-        doThrow(ResourceNotFoundException.pokemon(2L)).when(deletePokemon).delete(2L);
+        doThrow(ResourceNotFoundException.pokemon(2L)).when(pokemonService).delete(2L);
 
         mockMvc.perform(delete("/api/pokemon/2").header("Authorization", bearer()))
                 .andExpect(status().isNotFound());
