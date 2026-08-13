@@ -64,3 +64,6 @@ yarn-error.log*
 # Local scratch (not part of the project)
 ejemplos-solid/
 
+
+# Claude Code — ephemeral validate-before-push GO marker (machine-local)
+.claude/.push-approved
