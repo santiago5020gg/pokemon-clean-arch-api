@@ -8,9 +8,10 @@ import type {
   SyncResult,
 } from './types'
 
-/** SWR key builder for the paginated list — identical (page,size) → cache hit. */
-export function listKey(page: number, size: number): string {
-  return `/pokemon?page=${page}&size=${size}`
+/** SWR key builder for the paginated list — identical (q,page,size) → cache hit. */
+export function listKey(q: string, page: number, size: number): string {
+  const base = `/pokemon?page=${page}&size=${size}`
+  return q ? `${base}&q=${encodeURIComponent(q)}` : base
 }
 
 /** SWR key builder for a single Pokémon detail. */
@@ -18,8 +19,12 @@ export function detailKey(id: number): string {
   return `/pokemon/${id}`
 }
 
-export function fetchPokemonList(page: number, size: number): Promise<PageResult<PokemonSummary>> {
-  return request<PageResult<PokemonSummary>>(listKey(page, size))
+export function fetchPokemonList(
+  q: string,
+  page: number,
+  size: number,
+): Promise<PageResult<PokemonSummary>> {
+  return request<PageResult<PokemonSummary>>(listKey(q, page, size))
 }
 
 export function fetchPokemonDetail(id: number): Promise<PokemonDetail> {

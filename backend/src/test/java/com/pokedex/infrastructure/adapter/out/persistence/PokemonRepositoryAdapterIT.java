@@ -76,7 +76,7 @@ class PokemonRepositoryAdapterIT {
         Pokemon p = adapter.findById(1L).orElseThrow();
         assertThat(p.region()).isEqualTo("Johto");
         assertThat(p.internalTags()).containsExactly("x");
-        assertThat(adapter.findAll(0, 10).totalElements()).isEqualTo(1L);
+        assertThat(adapter.findAll(null, 0, 10).totalElements()).isEqualTo(1L);
     }
 
     @Test
@@ -85,11 +85,24 @@ class PokemonRepositoryAdapterIT {
         adapter.save(sample(2L, "ivysaur"));
         adapter.save(sample(3L, "venusaur"));
 
-        PageResult<Pokemon> page = adapter.findAll(0, 2);
+        PageResult<Pokemon> page = adapter.findAll(null, 0, 2);
 
         assertThat(page.content()).hasSize(2);
         assertThat(page.totalElements()).isEqualTo(3L);
         assertThat(page.totalPages()).isEqualTo(2);
+    }
+
+    @Test
+    void findAll_filtersByNameCaseInsensitively() {
+        adapter.save(sample(1L, "bulbasaur"));
+        adapter.save(sample(4L, "charmander"));
+        adapter.save(sample(6L, "charizard"));
+
+        PageResult<Pokemon> matches = adapter.findAll("CHAR", 0, 10);
+
+        assertThat(matches.totalElements()).isEqualTo(2L);
+        assertThat(matches.content()).extracting(Pokemon::name)
+                .containsExactly("charmander", "charizard");
     }
 
     @Test
