@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "if": "Bash(git push*)",
+            "timeout": 10,
+            "statusMessage": "Checking validate-before-push gate",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/validate-before-push-gate.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
