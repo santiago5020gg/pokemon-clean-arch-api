@@ -6,6 +6,7 @@ import com.pokedex.core.domain.Evolution;
 import com.pokedex.core.domain.Pokemon;
 import com.pokedex.core.domain.Stats;
 import com.pokedex.core.dto.PageResult;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -30,6 +31,15 @@ class PokemonRepositoryAdapterIT {
 
     @Autowired
     PokemonRepositoryAdapter adapter;
+
+    @Autowired
+    PokemonJpaRepository jpaRepository;
+
+    // The V2 seed migration pre-populates demo Pokemon; clear it so each test controls its own data.
+    @BeforeEach
+    void clearSeed() {
+        jpaRepository.deleteAllInBatch();
+    }
 
     private Pokemon sample(long id, String name) {
         return new Pokemon(id, name, "sprite", "image", 69, 7, "Seed Pokémon", "desc",
