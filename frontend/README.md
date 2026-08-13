@@ -43,8 +43,15 @@ so no CORS setup is needed. See `.env` to change the API base URL for Docker.
 ### One command for the whole stack
 
 From the repo root, `./start-dev.ps1` (Windows PowerShell) or `./start-dev.sh`
-(macOS/Linux) boots the backend and frontend together and prints the URL once
-both are ready.
+(macOS/Linux) boots the **entire stack in order, validating each layer**:
+
+1. **PostgreSQL** via `docker compose up -d db` (waits for `pg_isready`)
+2. **Backend** via `backend/mvnw spring-boot:run` (waits for `/actuator/health`)
+3. **Frontend** via Vite (waits for the dev server)
+4. **End-to-end check** (`GET /api/pokemon`), then prints the URL to open
+
+Only Docker, Java 21 and Node.js are required — nothing else to set up first.
+Ctrl+C stops the backend, frontend and the database container.
 
 ## Scripts
 
