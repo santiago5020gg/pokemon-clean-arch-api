@@ -60,13 +60,12 @@ src/
                            PokemonUpdateRequest {localizedName, region, internalTags},
                            RegisterRequest, LoginRequest, AuthResponse {token, type, expiresIn}, UserDto
     core/mapper/           PokemonMapper, UserMapper
-    core/ports/in/         ListPokemonUseCase, GetPokemonDetailUseCase, SyncPokemonUseCase,
-                           UpdatePokemonUseCase, DeletePokemonUseCase, RegisterUserUseCase, LoginUseCase
+    core/ports/in/         PokemonServicePort (list, getById, sync, update, delete),
+                           UserServicePort (register, login)
     core/ports/out/        PokemonProviderPort (PokeAPI), PokemonRepositoryPort, UserRepositoryPort,
                            CachePort (optional), PasswordEncoderPort, TokenProviderPort
-    core/usecase/          ListPokemonService, GetPokemonDetailService, SyncPokemonService,
-                           UpdatePokemonService, DeletePokemonService, RegisterUserService, LoginService
-                           (each implements its ports/in interface, depends only on ports/out)
+    core/usecase/          PokemonService, UserService (one cohesive service per aggregate:
+                           each implements its ports/in interface, depends only on ports/out)
 
     infrastructure/adapter/in/    PokemonController, AuthController, GlobalExceptionHandler (@RestControllerAdvice)
     infrastructure/adapter/out/

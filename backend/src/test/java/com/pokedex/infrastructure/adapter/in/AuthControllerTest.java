@@ -5,8 +5,7 @@ import com.pokedex.core.dto.AuthResponse;
 import com.pokedex.core.dto.UserDto;
 import com.pokedex.core.exception.DuplicateResourceException;
 import com.pokedex.core.exception.InvalidCredentialsException;
-import com.pokedex.core.ports.in.LoginUseCase;
-import com.pokedex.core.ports.in.RegisterUserUseCase;
+import com.pokedex.core.ports.in.UserServicePort;
 import com.pokedex.infrastructure.adapter.out.security.JwtAuthenticationFilter;
 import com.pokedex.infrastructure.adapter.out.security.JwtTokenProvider;
 import org.junit.jupiter.api.Test;
@@ -31,13 +30,11 @@ class AuthControllerTest {
     MockMvc mockMvc;
 
     @MockitoBean
-    RegisterUserUseCase registerUser;
-    @MockitoBean
-    LoginUseCase login;
+    UserServicePort userService;
 
     @Test
     void register_returns201AndNeverThePassword() throws Exception {
-        when(registerUser.register(any())).thenReturn(new UserDto(1L, "ash", "ash@pokedex.io", "USER"));
+        when(userService.register(any())).thenReturn(new UserDto(1L, "ash", "ash@pokedex.io", "USER"));
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -60,7 +57,7 @@ class AuthControllerTest {
 
     @Test
     void register_duplicate_returns409() throws Exception {
-        when(registerUser.register(any())).thenThrow(new DuplicateResourceException("dup"));
+        when(userService.register(any())).thenThrow(new DuplicateResourceException("dup"));
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -71,7 +68,7 @@ class AuthControllerTest {
 
     @Test
     void login_returns200WithBearerToken() throws Exception {
-        when(login.login(any())).thenReturn(AuthResponse.bearer("jwt", 3600));
+        when(userService.login(any())).thenReturn(AuthResponse.bearer("jwt", 3600));
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -84,7 +81,7 @@ class AuthControllerTest {
 
     @Test
     void login_badCredentials_returns401() throws Exception {
-        when(login.login(any())).thenThrow(new InvalidCredentialsException("bad"));
+        when(userService.login(any())).thenThrow(new InvalidCredentialsException("bad"));
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
