@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-void-900 font-sans text-slate-200 antialiased;
+    background-image:
+      radial-gradient(circle at 15% -10%, rgba(124, 92, 255, 0.16), transparent 42%),
+      radial-gradient(circle at 85% 0%, rgba(34, 211, 238, 0.12), transparent 40%),
+      radial-gradient(circle at 50% 120%, rgba(244, 114, 182, 0.1), transparent 45%);
+    background-attachment: fixed;
+  }
+
+  /* Neon focus ring, consistent across interactive elements */
+  *:focus-visible {
+    @apply outline-none ring-2 ring-neon-violet/70 ring-offset-2 ring-offset-void-900;
+  }
+}
+
+@layer components {
+  /* Frosted glass surface */
+  .glass {
+    @apply border border-white/10 bg-white/5 shadow-glass backdrop-blur-xl;
+  }
+
+  .glass-hover {
+    @apply transition-all duration-300 hover:border-white/20 hover:bg-white/[0.07];
+  }
+}
